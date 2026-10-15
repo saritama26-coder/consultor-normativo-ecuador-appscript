@@ -563,10 +563,13 @@ exportBtn.addEventListener('click', function() {
   printWindow.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Consulta normativa - PDF</title><style>@page{size:A4;margin:18mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:12pt;line-height:1.5;margin:0}.result{margin:0 0 16pt;padding:0;break-inside:auto}.result h3{font-size:13pt;margin:0 0 7pt}.meta{font-size:10pt;color:#444;margin:0 0 9pt}.snippet{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11pt;line-height:1.5}.norm-context{font-weight:bold;margin-bottom:8pt}.norm-list{margin:4pt 0 8pt 18pt;padding:0}.norm-list li{margin:2pt 0}.norm-subheading{font-weight:bold}mark{background:transparent;color:#000}@media screen{body{padding:18px;max-width:850px;margin:auto}.print-help{padding:10px;background:#eef5ef;margin-bottom:15px;border-radius:8px;font-size:12px}}@media print{.print-help{display:none}}</style></head><body><div class="print-help">Para guardar como PDF, usa Compartir o Imprimir en el navegador y selecciona «Guardar como PDF».</div>' + printable + '</body></html>');
   printWindow.document.close();
   printWindow.focus();
-  // La ventana separada permite que Safari/iOS y navegadores móviles impriman el contenido.
-  window.setTimeout(function() {
-    try { printWindow.print(); } catch (e) {}
-  }, 700);
+  // Ejecutar impresión dentro del gesto del usuario: iOS puede bloquearla si se difiere con setTimeout.
+  try {
+    printWindow.print();
+  } catch (e) {
+    try { printWindow.close(); } catch (_) {}
+    window.print();
+  }
 });
 exportRow.appendChild(exportBtn); results.appendChild(exportRow);
 }
