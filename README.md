@@ -31,3 +31,16 @@ Este repositorio está preparado para sincronizar los archivos del proyecto con 
 
 ## Límite de esta entrega
 El paquete prepara los archivos y el flujo de sincronización. No crea el repositorio en GitHub ni puede vincularse al proyecto real hasta que se configuren el ID real del script y los secretos. La URL `/exec` por sí sola no revela de forma suficiente el ID editable que `clasp` necesita.
+
+## Cambios del 15-10-2026 (búsqueda y citas)
+
+- Modos de coincidencia: todas las palabras (predeterminado), frase exacta y cualquier palabra. Las palabras se comparan completas (con singular/plural) y el texto entre comillas se busca como frase.
+- Orden por relevancia (cobertura, frase completa, cercanía entre términos, frecuencia) con porcentaje relativo en cada resultado.
+- Paginación con «Cargar más resultados» y resumen de coincidencias agrupadas por documento (clic para filtrar por ese documento).
+- Búsqueda directa de artículo con norma: `art. 365 RGLOSNCP`, `art 298 coip`.
+- Página de la coincidencia y rango de páginas del extracto, según el folio impreso en el documento. Se asume que el folio («Página N de M») está al pie de cada página.
+- Limpieza de encabezados y pies editoriales al mostrar el texto (título de la norma + «Página N», «LEXIS FINDER»). El índice no se modifica.
+- Fecha del nombre del archivo y «Última modificación» declarada en el texto, cuando existen.
+- Documentos sin texto: se listan en la interfaz y en cada búsqueda. Para revisarlos: ejecutar `diagnosticarDocumentosSinTexto()` y luego `reintentarErrores()`; el OCR ahora reintenta por tramos más pequeños (mínimo `OCR_MIN_PAGINAS`).
+- Verificación de fuentes: columna H «Verificación» de la hoja Documentos (ejecutar `prepararColumnaVerificacion()` una vez). Escribir «Verificado» (más fecha o nota) en las fuentes cotejadas con la publicación oficial. Filtro «Solo fuentes verificadas» en la interfaz.
+- Corregido: el botón «Copiar texto» no tenía acción y «Exportar resultados a PDF» ocultaba todas las tarjetas al imprimir.

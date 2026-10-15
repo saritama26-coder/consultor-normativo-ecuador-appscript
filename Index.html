@@ -9,7 +9,7 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2064%2064%22%20aria-hidden%3D%22true%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%2314392F%22/%3E%3Cpath%20d%3D%22M15%209h23l11%2011v15M38%209v12h11M20%2018h13M20%2024h11M20%2030h8M12%2052V12a3%203%200%200%201%203-3h23l11%2011v15M12%2052h12%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3Cpath%20d%3D%22M25%2039%2040%2031%2055%2039v2H25zM29%2043h22M31%2043v9m7-9v9m7-9v9M27%2054h25M24%2058h31%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E">
 <style>
 :root{--green:#173f32;--green2:#24634d;--ink:#1e3027;--muted:#687970;--line:#dce5de;--bg:#f3f6f3;--mint:#eef5f0;--amber:#fff8e8;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--bg);-webkit-font-smoothing:antialiased}
-*{box-sizing:border-box}body{margin:0;min-width:320px;background:var(--bg)}button,input,select{font:inherit}button,select{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #24634d35;outline-offset:2px}
+[hidden]{display:none!important}*{box-sizing:border-box}body{margin:0;min-width:320px;background:var(--bg)}button,input,select{font:inherit}button,select{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #24634d35;outline-offset:2px}
 .top{background:#102e25;color:#fff}.topin{max-width:1180px;width:calc(100% - 40px);margin:auto;min-height:66px;display:flex;align-items:center;justify-content:space-between;gap:16px}.brand{font-size:15px;font-weight:750}.subbrand{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#c8ddd0;margin-top:4px}.toplabel{font-size:11px;border:1px solid #ffffff30;border-radius:99px;padding:8px 11px;color:#dce9e1}
 .hero{background:linear-gradient(115deg,#1a493a,#14392f);color:white}.heroin{max-width:1180px;width:calc(100% - 40px);margin:auto;padding:24px 0 38px}.eyebrow{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#c9dfd2;font-weight:800}.hero h1{font-size:clamp(25px,3vw,34px);line-height:1.15;letter-spacing:-.03em;margin:9px 0 7px}.hero p{font-size:13px;line-height:1.6;color:#e0ebe4;margin:0;max-width:760px}
 main{max-width:1180px;width:calc(100% - 40px);margin:-22px auto 0;position:relative;padding-bottom:28px}.panel{background:#fff;border:1px solid var(--line);border-radius:16px;padding:21px;box-shadow:0 10px 28px #163d2e0c}.kicker{font-size:10px;color:var(--green2);font-weight:850;letter-spacing:.13em;text-transform:uppercase}.panel h2{font-size:19px;margin:6px 0 15px;letter-spacing:-.02em}
@@ -170,6 +170,47 @@ mark{background:#fff1b8;color:inherit;border-radius:3px;padding:0 2px}.snippet.c
 }
 @media(min-width:601px){.mobile-more-panel{display:none!important}}
 
+/* ===== Mejoras 2026-10-15 ===== */
+.searchopts{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 14px;margin-top:11px}
+.modeseg{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.optlabel{font-size:10px;font-weight:800;color:#5c7063;letter-spacing:.06em;text-transform:uppercase;margin-right:2px}
+.modeseg label{position:relative;cursor:pointer}
+.modeseg input{position:absolute;opacity:0;pointer-events:none}
+.modeseg label span{display:inline-block;border:1px solid #d3e0d6;background:#f6f9f6;color:#36584a;border-radius:99px;padding:7px 11px;font-size:11px;font-weight:700}
+.modeseg label input:checked+span{background:var(--green2);border-color:var(--green2);color:#fff}
+.modeseg input:focus-visible+span{outline:3px solid #24634d35;outline-offset:2px}
+.verifopt{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#36584a;font-weight:650;cursor:pointer}
+.verifopt input{width:16px;height:16px;accent-color:var(--green2)}
+.excluded{margin-top:8px;font-size:11px;color:#8a6a1c;background:var(--amber);border:1px solid #e9d9a8;border-radius:9px;padding:8px 11px}
+.excluded summary{cursor:pointer;font-weight:700}
+.excluded ul{margin:7px 0 2px 18px;padding:0;line-height:1.6}
+.excluded li span{color:#9a7f3f}
+.summary{background:#fff;border:1px solid var(--line);border-radius:13px;padding:13px 15px;display:grid;gap:9px}
+.summary-line{font-size:12px;color:#35463b;line-height:1.5}
+.summary-line strong{color:var(--green)}
+.summary-warn{font-size:11px;color:#8a6a1c}
+.groups{display:flex;flex-wrap:wrap;gap:6px}
+.groupchip{border:1px solid #d8e6dc;background:#f4f8f5;color:#285740;border-radius:99px;padding:6px 10px;font-size:10px;font-weight:700;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.groupchip:hover{background:#e7f1ea}
+.groupchip b{color:#173f32}
+.badges{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0 0}
+.badge{font-size:9.5px;font-weight:800;letter-spacing:.03em;border-radius:6px;padding:4px 7px;border:1px solid}
+.badge.rel{background:#eef3fb;color:#2c4f7c;border-color:#d4e0f1}
+.badge.ok{background:#e9f6ee;color:#1f6a3f;border-color:#b9dcc6}
+.badge.pend{background:#fff6e2;color:#8a6a1c;border-color:#ecd9a6}
+.badge.page{background:#f3f5f4;color:#41544a;border-color:#dfe6e1}
+.loadmore{display:flex;justify-content:center;margin-top:4px}
+.loadmore .btn{background:#fff;color:var(--green2);border:1px solid #bcd3c4}
+.loadmore .btn:hover{background:#eef5f0}
+@media(max-width:600px){
+  .searchopts{flex-direction:column;align-items:flex-start}
+  .modeseg label span{padding:6px 9px;font-size:10px}
+  .optlabel{width:100%;font-size:9px}
+  .summary{padding:11px}
+  .groupchip{font-size:9.5px}
+}
+@media print{.summary,.loadmore,.badges .rel{display:none!important}.badge{border:0!important;padding:0 6pt 0 0!important;font-size:9pt!important}}
+
 </style>
 </head>
 <body>
@@ -206,11 +247,22 @@ mark{background:#fff1b8;color:inherit;border-radius:3px;padding:0 2px}.snippet.c
 </div>
 <div class="actions grid-action"><button class="btn" id="submitBtn" type="submit"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4.3 4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="submitLabel">Consultar documentos</span></button></div>
 </div>
+<div class="searchopts">
+<div class="modeseg" role="radiogroup" aria-label="Tipo de coincidencia">
+<span class="optlabel">Coincidencia</span>
+<label><input type="radio" name="modo" value="TODAS" checked><span>Todas las palabras</span></label>
+<label><input type="radio" name="modo" value="FRASE"><span>Frase exacta</span></label>
+<label><input type="radio" name="modo" value="CUALQUIERA"><span>Cualquier palabra</span></label>
+</div>
+<label class="verifopt"><input type="checkbox" id="soloVerificadas"><span>Solo fuentes verificadas</span></label>
+</div>
 </form>
 <div class="quick" id="quick" hidden>
 <span class="quick-label">Categorías indexadas</span>
 </div>
 <div class="catmsg" id="catalogMessage" hidden></div>
+<details class="excluded" id="excludedBox" hidden><summary id="excludedSummary"></summary><ul id="excludedList"></ul></details>
+<div class="hint">Usa comillas para buscar una frase dentro de otras palabras: <em>"recepción provisional" obras</em>. Para un artículo concreto: <em>art. 365 RGLOSNCP</em>. Las palabras se comparan completas (incluye singular y plural).</div>
 <div class="hint">El filtro se obtiene del catálogo de documentos indexados. Las categorías dependen de los nombres y carpetas reconocidos; revisa las asignaciones automáticas si una fuente aparece en una categoría incorrecta.</div>
 </section>
 <section class="saved-panel no-print" id="savedPanel">
@@ -334,12 +386,27 @@ quick.hidden = true;
 status.textContent = docs.length
 ? docs.length + ' documento(s) indexado(s) disponibles.'
 : 'Aún no hay documentos indexados. Ejecuta indexarDocumentosDrive() en Apps Script.';
-if (data.message) {
-catalogMessage.textContent = data.message;
-catalogMessage.hidden = false;
-} else {
 catalogMessage.hidden = true;
+renderExcluded(data.excluidos || []);
+if (docs.length) {
+const ver = typeof data.verificados === 'number' ? data.verificados : 0;
+status.textContent += ' Verificadas: ' + ver + ' de ' + docs.length + '.';
 }
+}
+function renderExcluded(list) {
+const box = document.getElementById('excludedBox');
+const summary = document.getElementById('excludedSummary');
+const ul = document.getElementById('excludedList');
+ul.replaceChildren();
+if (!list.length) { box.hidden = true; return; }
+summary.textContent = list.length + ' documento(s) no participan en la búsqueda porque no tienen texto disponible (ver cuáles)';
+list.forEach(function(d) {
+const li = document.createElement('li');
+li.appendChild(document.createTextNode(d.nombre + ' '));
+const st = document.createElement('span'); st.textContent = '— ' + (d.estado || 'sin estado');
+li.appendChild(st); ul.appendChild(li);
+});
+box.hidden = false;
 }
 function renderQuickChips(cats) {
 quick.querySelectorAll('.chip').forEach(function(c) { c.remove(); });
@@ -383,24 +450,70 @@ function errorText(error) {
 return error && error.message ? error.message : String(error);
 }
 /* ---------- Consulta ---------- */
+const PAGE_SIZE = 30;
+let lastSearch = null;   // { query, filtro, opciones }
+let shownCount = 0;
+let currentHighlighter = null;
+function selectedMode() {
+const r = form.querySelector('input[name="modo"]:checked');
+return r ? r.value : 'TODAS';
+}
 form.addEventListener('submit', function(event) {
 event.preventDefault();
 const query = input.value.trim();
 if (!query || button.disabled) return;
+lastSearch = {
+query: query,
+filtro: sourceFilter.value || 'TODAS',
+opciones: { modo: selectedMode(), soloVerificadas: document.getElementById('soloVerificadas').checked, offset: 0, limite: PAGE_SIZE }
+};
 button.disabled = true;
 submitLabel.textContent = 'Buscando…';
 status.textContent = 'Buscando en las fuentes seleccionadas…';
 resultDescription.textContent = 'Filtro aplicado: ' + selectedFilterText();
 showEmpty('Buscando documentos…', 'La consulta está en curso.');
+scrollToResults();
 google.script.run
-.withSuccessHandler(renderResponse)
+.withSuccessHandler(function(data) { renderResponse(data); scrollToResults(); })
 .withFailureHandler(function(error) {
 resetButton();
 status.textContent = 'Error: ' + errorText(error);
 showEmpty('No se pudo completar la consulta', 'Revisa el registro de ejecución de Apps Script.');
 })
-.consultarNormativa(query, sourceFilter.value || 'TODAS');
+.consultarNormativa(query, lastSearch.filtro, lastSearch.opciones);
 });
+function scrollToResults() {
+const head = document.querySelector('.resultshead');
+if (head) head.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+function loadMore(btn) {
+if (!lastSearch) return;
+btn.disabled = true; btn.textContent = 'Cargando…';
+const opciones = Object.assign({}, lastSearch.opciones, { offset: shownCount });
+google.script.run
+.withSuccessHandler(function(data) { renderResponse(data, { append: true }); })
+.withFailureHandler(function(error) {
+btn.disabled = false; btn.textContent = 'Cargar más resultados';
+status.textContent = 'Error al cargar más resultados: ' + errorText(error);
+})
+.consultarNormativa(lastSearch.query, lastSearch.filtro, opciones);
+}
+function filterByDocument(idFuente, nombre) {
+const value = 'DOC:' + idFuente;
+let opt = Array.prototype.find.call(sourceFilter.options, function(o) { return o.value === value; });
+if (!opt) {
+let group = sourceFilter.querySelector('optgroup[data-docs]');
+if (!group) {
+group = document.createElement('optgroup');
+group.label = 'Documento';
+group.dataset.docs = '1';
+sourceFilter.appendChild(group);
+}
+addOption(group, value, limpiarNombre(nombre));
+}
+sourceFilter.value = value;
+submitForm();
+}
 function resetButton() {
 button.disabled = false;
 submitLabel.textContent = 'Consultar documentos';
@@ -412,28 +525,85 @@ const strong = document.createElement('strong'); strong.textContent = titleText;
 const span = document.createElement('span'); span.textContent = bodyText;
 box.append(strong, span); results.appendChild(box);
 }
-function renderResponse(data) {
+function renderSummary(data, totalCoinc) {
+const box = document.createElement('div'); box.className = 'summary no-print';
+const line = document.createElement('div'); line.className = 'summary-line';
+const grupos = Array.isArray(data.porDocumento) ? data.porDocumento : [];
+const strong = document.createElement('strong');
+strong.textContent = totalCoinc + ' coincidencia(s)';
+line.appendChild(strong);
+line.appendChild(document.createTextNode(' en ' + grupos.length + ' documento(s) · Modo: ' + (data.descripcionModo || 'todas las palabras') + ' · Fuente: ' + selectedFilterText()));
+box.appendChild(line);
+if (grupos.length > 1) {
+const g = document.createElement('div'); g.className = 'groups';
+grupos.slice(0, 15).forEach(function(d) {
+const chip = document.createElement('button'); chip.type = 'button'; chip.className = 'groupchip';
+chip.title = 'Ver solo coincidencias de ' + d.documento;
+const b = document.createElement('b'); b.textContent = d.cantidad;
+chip.append(document.createTextNode(limpiarNombre(d.documento).slice(0, 60) + ' · '), b);
+chip.addEventListener('click', function() { filterByDocument(d.idFuente, d.documento); });
+g.appendChild(chip);
+});
+if (grupos.length > 15) {
+const more = document.createElement('span'); more.className = 'summary-warn';
+more.textContent = '+' + (grupos.length - 15) + ' documento(s) más';
+g.appendChild(more);
+}
+box.appendChild(g);
+}
+const excl = Array.isArray(data.excluidos) ? data.excluidos : [];
+if (excl.length) {
+const w = document.createElement('div'); w.className = 'summary-warn';
+w.textContent = 'Atención: ' + excl.length + ' documento(s) sin texto no participan en esta búsqueda (' +
+excl.slice(0, 3).map(function(d) { return limpiarNombre(d.nombre); }).join('; ') + (excl.length > 3 ? '; …' : '') + ').';
+box.appendChild(w);
+}
+return box;
+}
+function pageText(item) {
+const ini = item.paginaInicio || '';
+const fin = item.paginaFin || '';
+const parts = [];
+if (item.pagina) parts.push('Coincidencia en ' + item.pagina);
+if (ini && fin && ini !== fin) parts.push('extracto ' + ini.replace(/ de \d+$/, '') + ' a ' + fin);
+if (!parts.length) return 'Página no identificada en el texto indexado';
+return parts.join(' · ') + ' (' + (item.paginaNota || 'según el folio impreso en el documento') + ')';
+}
+function renderResponse(data, renderOpts) {
+const append = !!(renderOpts && renderOpts.append);
 resetButton();
-results.replaceChildren();
+if (!append) results.replaceChildren();
 if (!data || !data.ok) {
 const msg = (data && data.message) || 'No se pudo procesar la consulta.';
 status.textContent = msg;
-showEmpty('Consulta no disponible', msg);
+if (!append) showEmpty('Consulta no disponible', msg);
 return;
 }
 const items = Array.isArray(data.resultados) ? data.resultados : [];
-const total = data.total || 0;
-const totalCoinc = data.totalCoincidencias || total;
-status.textContent = totalCoinc > total
-? 'Se muestran ' + total + ' de ' + totalCoinc + ' coincidencias.'
-: 'Se encontraron ' + total + ' resultado(s).';
-resultDescription.textContent = 'Fuente seleccionada: ' + selectedFilterText();
-if (!items.length) {
-showEmpty('No encontramos coincidencias', data.aviso || 'Prueba otras palabras clave o selecciona otra fuente.');
+const totalCoinc = data.totalCoincidencias || items.length;
+const offset = append ? (data.offset || shownCount) : 0;
+shownCount = offset + items.length;
+status.textContent = totalCoinc > shownCount
+? 'Se muestran ' + shownCount + ' de ' + totalCoinc + ' coincidencias.'
+: 'Se encontraron ' + totalCoinc + ' resultado(s).';
+if (!append) resultDescription.textContent = 'Fuente seleccionada: ' + selectedFilterText();
+if (!items.length && !append) {
+if (Array.isArray(data.porDocumento)) results.appendChild(renderSummary(data, 0));
+const box = document.createElement('div'); box.className = 'empty';
+const st = document.createElement('strong'); st.textContent = 'No encontramos coincidencias';
+const sp = document.createElement('span'); sp.textContent = data.aviso || 'Prueba otras palabras clave o selecciona otra fuente.';
+box.append(st, sp); results.appendChild(box);
 return;
 }
-const highlighter = buildHighlighter(item0Terms(items));
-items.forEach(function(item, index) {
+if (append) {
+results.querySelectorAll('.results-footer').forEach(function(el) { el.remove(); });
+} else {
+if (Array.isArray(data.porDocumento)) results.appendChild(renderSummary(data, totalCoinc));
+currentHighlighter = buildHighlighter(item0Terms(items), data.frases || []);
+}
+const highlighter = currentHighlighter;
+items.forEach(function(item, k) {
+const index = offset + k;
 const card = document.createElement('article'); card.className = 'result';
 const head = document.createElement('div'); head.className = 'rhead';
 const titleText = item.articuloCoincidente || item.articulo || item.documento || 'Fragmento normativo';
@@ -442,11 +612,15 @@ const right = document.createElement('div'); right.className = 'rheadright no-pr
 const copy = document.createElement('button'); copy.type = 'button'; copy.className = 'iconbtn';
 copy.title = 'Copiar texto completo'; copy.setAttribute('aria-label', 'Copiar texto completo');
 copy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Copiar texto</span>';
+const citation = titleText + '\n' + (item.documento || '') + (item.pagina ? ' — ' + item.pagina : '');
+copy.addEventListener('click', function() {
+copyText(citation + '\n\n' + limpiarPiesDePagina(item.extracto || item.texto || ''), copy, 'Texto copiado');
+});
 const share = document.createElement('button');
 share.type = 'button'; share.className = 'iconbtn';
 share.title = 'Compartir resultado'; share.setAttribute('aria-label', 'Compartir resultado');
 share.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="1.8"/><path d="m8.7 10.6 6.6-4.2M8.7 13.4l6.6 4.2" stroke="currentColor" stroke-width="1.8"/></svg><span>Compartir</span>';
-const shareText = titleText + '\n' + (item.documento || '') + '\n\n' + limpiarPiesDePagina(item.extracto || item.texto || '');
+const shareText = citation + '\n\n' + limpiarPiesDePagina(item.extracto || item.texto || '');
 share.addEventListener('click', async function() {
   const shareData = { title: titleText, text: shareText, url: item.url || window.location.href };
   try {
@@ -478,9 +652,27 @@ const doc = document.createElement('strong'); doc.textContent = item.documento |
 meta.appendChild(doc);
 if (item.categoria) meta.appendChild(document.createTextNode(' · ' + item.categoria));
 if (item.carpeta) meta.appendChild(document.createTextNode(' · Carpeta: ' + item.carpeta));
-if (item.estadoRevision) meta.appendChild(document.createTextNode(' · ' + item.estadoRevision));
-
+if (item.fechaArchivo) meta.appendChild(document.createTextNode(' · Fecha en el nombre del archivo: ' + item.fechaArchivo));
+if (item.ultimaModificacion) meta.appendChild(document.createTextNode(' · Última modificación (según el documento): ' + item.ultimaModificacion));
 if (item.articuloCoincidente && item.articulo && item.articulo !== item.articuloCoincidente) meta.appendChild(document.createTextNode(' · Fragmento indexado: ' + item.articulo));
+const badges = document.createElement('div'); badges.className = 'badges';
+if (typeof item.relevancia === 'number') {
+const rel = document.createElement('span'); rel.className = 'badge rel';
+rel.textContent = 'Relevancia ' + item.relevancia + '%';
+rel.title = 'Relevancia relativa al mejor resultado de esta consulta';
+badges.appendChild(rel);
+}
+const ver = document.createElement('span');
+ver.className = 'badge ' + (item.verificado ? 'ok' : 'pend');
+ver.textContent = item.verificado ? (item.estadoRevision || 'Verificado') : 'Pendiente de verificación';
+ver.title = item.verificado
+? 'Fuente marcada como verificada por el administrador (hoja Documentos, columna Verificación).'
+: 'Fuente no cotejada aún con la publicación oficial. Verifica el texto antes de citarlo.';
+badges.appendChild(ver);
+const pg = document.createElement('span'); pg.className = 'badge page';
+pg.textContent = pageText(item);
+badges.appendChild(pg);
+meta.appendChild(badges);
 const fullText = limpiarPiesDePagina(item.texto || 'No hay texto disponible.');
 card.dataset.fullText = fullText;
 const text = document.createElement('div'); text.className = 'snippet';
@@ -497,7 +689,7 @@ if (item.contextoNormativo) {
 appendFormattedText(text, extracto || fullText, highlighter);
 card.appendChild(text);
 const tools = document.createElement('div'); tools.className = 'rtools no-print';
-if (extracto) {
+if (extracto && extracto !== fullText) {
 const full = document.createElement('button'); full.type = 'button'; full.className = 'more';
 full.textContent = 'Ver fragmento completo';
 let completo = false;
@@ -534,11 +726,18 @@ tools.appendChild(link);
 card.appendChild(tools);
 results.appendChild(card);
 });
+if (data.hayMas) {
+const lm = document.createElement('div'); lm.className = 'loadmore results-footer no-print';
+const lmBtn = document.createElement('button'); lmBtn.type = 'button'; lmBtn.className = 'btn';
+lmBtn.textContent = 'Cargar más resultados (' + (totalCoinc - shownCount) + ' restantes)';
+lmBtn.addEventListener('click', function() { loadMore(lmBtn); });
+lm.appendChild(lmBtn); results.appendChild(lm);
+}
 if (data.aviso) {
-const notice = document.createElement('div'); notice.className = 'notice'; notice.textContent = data.aviso;
+const notice = document.createElement('div'); notice.className = 'notice results-footer'; notice.textContent = data.aviso;
 results.appendChild(notice);
 }
-const exportRow = document.createElement('div'); exportRow.className = 'rtools no-print';
+const exportRow = document.createElement('div'); exportRow.className = 'rtools no-print results-footer';
 const exportBtn = document.createElement('button'); exportBtn.className = 'btn'; exportBtn.type = 'button';
 exportBtn.textContent = 'Exportar resultados a PDF';
 exportBtn.addEventListener('click', function() {
@@ -553,9 +752,11 @@ exportBtn.addEventListener('click', function() {
   const previousTitle = document.title;
   document.title = 'Consulta normativa - Consultor Normativo Ecuador';
   document.body.classList.add('print-single');
+  cards.forEach(function(c) { c.classList.add('print-target'); });
 
   const cleanup = function() {
     document.body.classList.remove('print-single');
+    cards.forEach(function(c) { c.classList.remove('print-target'); });
     document.title = previousTitle;
     window.removeEventListener('afterprint', cleanup);
   };
@@ -708,26 +909,54 @@ function accentClass(ch) {
 const map = { a: '[aáàä]', e: '[eéèë]', i: '[iíìï]', o: '[oóòö]', u: '[uúùü]', n: '[nñ]' };
 return map[ch] || ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
-function buildHighlighter(terms) {
+function buildHighlighter(terms, frases) {
 const parts = [];
+const boundary = '[^\\p{L}\\p{N}]+';
+(frases || []).forEach(function(f) {
+const words = String(f).split(/\s+/).filter(Boolean);
+if (words.length) parts.push(words.map(function(w) { return w.split('').map(accentClass).join(''); }).join(boundary));
+});
 terms.forEach(function(t) {
 const art = t.match(/^art[ií]culo\s+(.+)$/i);
 if (art) {
 const n = art[1].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 parts.push('art(?:[ií]culo)?\\.?\\s*(?:n[úu]mero\\s*|no\\.?\\s*)?' + n + '(?![0-9a-z])(?![.-][0-9])');
-} else if (t.length > 2) {
-parts.push(t.split('').map(accentClass).join(''));
+} else if ((frases || []).indexOf(t) !== -1) {
+return;
+} else if (t.length > 2 || /^\d+$/.test(t)) {
+// Palabra completa, con variante singular/plural (igual que el servidor).
+const variants = [t];
+if (t.length > 4 && /es$/.test(t)) variants.push(t.slice(0, -2));
+if (t.length > 3 && /s$/.test(t)) variants.push(t.slice(0, -1));
+parts.push('(?<![\\p{L}\\p{N}])(?:' + variants.map(function(v) { return v.split('').map(accentClass).join(''); }).join('|') + ')(?:es|s)?(?![\\p{L}\\p{N}])');
 }
 });
 if (!parts.length) return null;
 parts.sort(function(a, b) { return b.length - a.length; });
-try { return new RegExp('(' + parts.join('|') + ')', 'gi'); } catch (e) { return null; }
+try { return new RegExp('(' + parts.join('|') + ')', 'giu'); }
+catch (e) {
+// Navegadores sin soporte de lookbehind: resaltado sin límites de palabra.
+try { return new RegExp('(' + parts.join('|').replace(/\(\?<!\[\^\\p\{L\}\\p\{N\}\]\)/g, '') + ')', 'giu'); } catch (e2) { return null; }
+}
+}
+/* Línea de encabezado/pie editorial: título en mayúsculas o terminado en guion
+   seguido del folio ("REGLAMENTO ... Página 180 de 223", "COIP - Página 113"). */
+function esLineaEditorial(linea) {
+const t = String(linea || '').replace(/\s+/g, ' ').trim();
+if (!t || t.length > 200) return false;
+const m = t.match(/^(.*?)\s*P[aá]gina\s*\d{1,4}(?:\s+de\s+\d{1,4})?$/i);
+if (!m) return false;
+const antes = m[1].trim();
+return !antes || /[-–—]$/.test(antes) || antes === antes.toLocaleUpperCase('es');
 }
 /* Limpia pies de página OCR incrustados en medio de un artículo. */
 function limpiarPiesDePagina(textValue) {
 let text = String(textValue || '');
 // Elimina pies de página y encabezados editoriales que suelen incrustarse en el OCR.
 text = text
+  // Líneas editoriales completas: "TÍTULO DE LA NORMA Página 180 de 223", "COIP - Página 113", "LEXIS FINDER - www.lexis.com.ec".
+  .split('\n').filter(function(l) { return !esLineaEditorial(l); }).join('\n')
+  .replace(/(?:^|\n)[ \t]*LEXIS\s+FINDER\b[^\n]*(?=\n|$)/gi, '\n')
   .replace(/\s*(?:P[aá]gina|P[aá]g\.?)\s*\d{1,4}\s*(?:de\s*\d{1,4})?\s*/gi, ' ')
   .replace(/(?:^|\n)\s*\d{1,4}\s*\/\s*\d{1,4}\s*(?=\n|$)/gm, '\n')
   .replace(/(?:^|\n)\s*(?:Registro Oficial|www\.|https?:\/\/|Consultor Normativo Ecuador)\b[^\n]*(?=\n|$)/gim, '\n')

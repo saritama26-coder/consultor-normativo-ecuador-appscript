@@ -10,6 +10,22 @@
  * 4. Corta fragmentos en el inicio de un artículo para no partirlos.
  * 5. Compatible con Drive API v3 (Files.create) y v2 (Files.insert).
  *
+ * Cambios 2026-10-15:
+ * 6. Modos de búsqueda: todas las palabras (por defecto), frase exacta y
+ *    cualquier palabra; comparación por palabra completa (admite plural) y
+ *    frases entre comillas.
+ * 7. Relevancia: cobertura, frase completa, cercanía entre términos, frecuencia
+ *    y coincidencia en etiqueta/nombre; se devuelve relevancia relativa (%).
+ * 8. Paginación (offset/limite), agrupación de coincidencias por documento y
+ *    lista de documentos excluidos por falta de texto.
+ * 9. Búsqueda directa de artículo con norma: "art. 365 RGLOSNCP".
+ * 10. Página de la coincidencia y rango de páginas del extracto; limpieza de
+ *     encabezados/pies editoriales solo para mostrar.
+ * 11. Columna H "Verificación" en Documentos (valor "Verificado ..."), fecha
+ *     del archivo y "Última modificación" declarada en el texto.
+ * 12. OCR con reintento por tramos más pequeños y diagnóstico de documentos
+ *     sin texto: diagnosticarDocumentosSinTexto(), luego reintentarErrores().
+ *
  * No incluye interpretación automática ni referencias APA.
  */
 
@@ -26,6 +42,7 @@ const CONFIG = {
   CHUNK_CHARS: 8500,
   OCR_LANGUAGE: 'es',
   OCR_MAX_PAGINAS: 80, // límite de páginas del OCR de Drive por conversión
+  OCR_MIN_PAGINAS: 10, // tamaño mínimo de tramo al reintentar un OCR fallido
   PDF_LIB_URL: 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js',
   MAX_EJECUCION_MS: 4.5 * 60 * 1000, // margen frente al límite de 6 min
   FUNCION_CONTINUAR: 'continuarIndexacion'
@@ -37,7 +54,7 @@ const HEADERS_ARTICLES = [
 ];
 const HEADERS_DOCUMENTS = [
   'ID Drive', 'Nombre del documento', 'MIME type', 'URL',
-  'Carpeta', 'Fecha indexación', 'Estado'
+  'Carpeta', 'Fecha indexación', 'Estado', 'Verificación'
 ];
 
 const CATEGORIAS = [
@@ -110,7 +127,7 @@ async function reintentarErrores() {
   const artSheet = getOrCreateSheet_(ss, CONFIG.SHEET_ARTICLES, HEADERS_ARTICLES);
   if (docSheet.getLastRow() < 2) return await procesarIndexacion_();
 
-  const docs = docSheet.getRange(2, 1, docSheet.getLastRow() - 1, 7).getValues();
+  const docs = docSheet.getRange(2, 1, docSheet.getLastRow() - 1, 8).getValues();
   const reintentar = new Set();
   const conservar = docs.filter(function(r) {
     const estado = String(r[6] || '').trim();
@@ -118,13 +135,14 @@ async function reintentarErrores() {
     // que solo devolvieron el índice o tabla de contenido.
     const fallido = /^(?:Error\b|Sin texto\b|Texto extraído, pero se detectó principalmente índice\b|Omitido:)/i.test(estado)
       || /principalmente índice/i.test(estado)
-      || /sin dividir;.*texto.*incompleto/i.test(estado);
+      || /sin dividir;.*texto.*incompleto/i.test(estado)
+      || /OCR incompleto en págs\./.test(estado);
     if (fallido) reintentar.add(String(r[0]));
     return !fallido;
   });
   if (!reintentar.size) return { ok: true, message: 'No hay documentos con error para reintentar.' };
 
-  replaceSheetBody_(docSheet, conservar, 7);
+  replaceSheetBody_(docSheet, conservar, 8);
   if (artSheet.getLastRow() >= 2) {
     const arts = artSheet.getRange(2, 1, artSheet.getLastRow() - 1, 8).getValues()
       .filter(function(r) { return !reintentar.has(String(r[0])); });
@@ -383,39 +401,40 @@ function obtenerCatalogoFuentes() {
   const sheet = ss.getSheetByName(CONFIG.SHEET_DOCUMENTS);
   if (!sheet || sheet.getLastRow() < 2) {
     return {
-      ok: true, categorias: [], documentos: [],
+      ok: true, categorias: [], documentos: [], excluidos: [],
       message: 'No hay documentos indexados todavía. Ejecuta indexarDocumentosDrive() en Apps Script.'
     };
   }
 
-  const values = sheet.getRange(2, 1, sheet.getLastRow() - 1, 7).getDisplayValues();
+  const meta = leerMetadatosDocumentos_(sheet);
   const docs = [];
+  const excluidos = [];
   const categoryCounts = {};
-  let noDisponibles = 0;
+  let verificados = 0;
 
-  values.forEach(function(row) {
-    const id = String(row[0] || '').trim();
-    const name = String(row[1] || '').trim();
-    if (!id || !name) return;
-    const estado = String(row[6] || '').trim();
-    // Acepta los dos formatos históricos de estado de extracción, pero no
-    // incluye archivos sin texto o con errores de OCR.
-    const disponible = /^Texto extraído\s*(?:;|\()/i.test(estado)
-      && !/principalmente índice|sin texto|error|omitido/i.test(estado);
-    if (!disponible) { noDisponibles++; return; }
-
-    const folder = String(row[4] || '').trim();
-    const category = clasificarDocumento_(name, folder);
+  Object.keys(meta).forEach(function(id) {
+    const m = meta[id];
+    if (!m.nombre) return;
+    // No se incluyen archivos sin texto o con errores de OCR: se informan aparte
+    // para que el usuario sepa qué fuentes no participan en la búsqueda.
+    if (!m.disponible) {
+      excluidos.push({ nombre: m.nombre, estado: m.estadoDocumento || 'Sin estado', url: m.url });
+      return;
+    }
+    if (m.verificado) verificados++;
     docs.push({
       id: id,
-      nombre: name,
-      categoriaId: category.id,
-      categoria: category.nombre,
-      carpeta: folder,
-      estado: estado,
-      url: String(row[3] || '')
+      nombre: m.nombre,
+      categoriaId: m.categoriaId,
+      categoria: m.categoria,
+      carpeta: m.carpeta,
+      estado: m.estadoDocumento,
+      verificado: m.verificado,
+      verificacion: m.verificacion,
+      fechaArchivo: m.fechaArchivo,
+      url: m.url
     });
-    categoryCounts[category.id] = (categoryCounts[category.id] || 0) + 1;
+    categoryCounts[m.categoriaId] = (categoryCounts[m.categoriaId] || 0) + 1;
   });
 
   const categories = CATEGORIAS.filter(function(c) {
@@ -425,26 +444,42 @@ function obtenerCatalogoFuentes() {
   });
 
   docs.sort(function(a, b) { return a.nombre.localeCompare(b.nombre, 'es'); });
+  excluidos.sort(function(a, b) { return a.nombre.localeCompare(b.nombre, 'es'); });
   return {
     ok: true,
     categorias: categories,
     documentos: docs,
-    noDisponibles: noDisponibles,
-    message: noDisponibles
-      ? noDisponibles + ' documento(s) sin texto disponible; revisar la hoja Documentos.'
+    verificados: verificados,
+    excluidos: excluidos,
+    noDisponibles: excluidos.length,
+    message: excluidos.length
+      ? excluidos.length + ' documento(s) no participan en la búsqueda porque no tienen texto disponible.'
       : ''
   };
 }
 
 /**
- * Consulta con filtro opcional.
+ * Consulta con filtro y opciones (versión 2026-10-15).
  * filtro: TODAS | ID de categoría (NEC, CONSTITUCION...) | DOC:<ID de Drive>
+ * opciones: {
+ *   modo: 'TODAS' (todas las palabras, por defecto) | 'FRASE' (frase exacta) | 'CUALQUIERA',
+ *   offset: número de resultados ya mostrados (paginación),
+ *   limite: resultados por página (máx. 100),
+ *   soloVerificadas: true para limitar a fuentes marcadas como verificadas
+ * }
+ * Las palabras se comparan como palabra completa (admite singular/plural);
+ * el texto entre comillas se trata siempre como frase exacta.
  */
-function consultarNormativa(pregunta, filtro) {
+function consultarNormativa(pregunta, filtro, opciones) {
   const rawQuestion = String(pregunta || '').trim();
-  const query = normalizar_(rawQuestion);
   const filter = String(filtro || 'TODAS').trim();
-  if (query.length < 2) {
+  const opts = opciones || {};
+  const modo = /^(FRASE|CUALQUIERA)$/.test(String(opts.modo || '')) ? String(opts.modo) : 'TODAS';
+  const offset = Math.max(0, parseInt(opts.offset, 10) || 0);
+  const limite = Math.min(100, Math.max(1, parseInt(opts.limite, 10) || CONFIG.MAX_RESULTS));
+  const soloVerificadas = opts.soloVerificadas === true;
+
+  if (normalizar_(rawQuestion).length < 2) {
     return { ok: false, message: 'Escribe un artículo, una norma o palabras clave.' };
   }
 
@@ -455,87 +490,81 @@ function consultarNormativa(pregunta, filtro) {
     return { ok: false, message: 'No hay documentos indexados. Ejecuta indexarDocumentosDrive() desde Apps Script.' };
   }
 
-  const documentMeta = {};
-  if (docSheet && docSheet.getLastRow() >= 2) {
-    docSheet.getRange(2, 1, docSheet.getLastRow() - 1, 7).getDisplayValues().forEach(function(row) {
-      if (!row[0]) return;
-      const cat = clasificarDocumento_(row[1], row[4]);
-      documentMeta[String(row[0])] = {
-        categoriaId: cat.id,
-        categoria: cat.nombre,
-        carpeta: String(row[4] || ''),
-        estadoDocumento: String(row[6] || '')
-      };
-    });
+  const documentMeta = leerMetadatosDocumentos_(docSheet);
+  const excluidos = Object.keys(documentMeta)
+    .filter(function(id) { return !documentMeta[id].disponible; })
+    .map(function(id) { return { nombre: documentMeta[id].nombre, estado: documentMeta[id].estadoDocumento }; });
+
+  const consulta = analizarConsulta_(rawQuestion, modo);
+  const exactArticle = detectarArticulo_(rawQuestion);
+  if (!exactArticle && !consulta.frases.length && !consulta.terminos.length) {
+    return { ok: false, message: 'La consulta solo contiene palabras muy comunes. Agrega términos más específicos.' };
   }
 
   const values = articleSheet.getRange(2, 1, articleSheet.getLastRow() - 1, 8).getValues();
-  const stopWords = {
-    como:1, que:1, para:1, por:1, con:1, del:1, las:1, los:1, una:1, uno:1,
-    unos:1, unas:1, de:1, la:1, el:1, y:1, o:1, en:1, al:1, se:1, me:1, mi:1, un:1, es:1
-  };
-  const exactArticle = detectarArticulo_(rawQuestion);
-  const terms = query.split(/\s+/).filter(function(term) {
-    return term.length > 2 && !stopWords[term] && term !== 'articulo' && term !== 'art';
-  });
-  const scored = [];
 
+  // Fecha de última modificación declarada en el texto (portada de Lexis u otras ediciones).
+  values.forEach(function(row) {
+    const meta = documentMeta[String(row[0] || '')];
+    if (!meta || meta.ultimaModificacion) return;
+    const m = String(row[4] || '').match(/[ÚU]ltima\s+(?:modificaci[óo]n|reforma)\s*:?\s*([0-9]{1,2}(?:[-\/ ]|\s+de\s+)[A-Za-zÁÉÍÓÚáéíóú.]{3,12}(?:[-\/ ]|\s+de\s+)\.?[0-9]{2,4})/i);
+    if (m) meta.ultimaModificacion = m[1].trim();
+  });
+
+  // Búsqueda directa de artículo: palabras adicionales que identifican la norma
+  // (p. ej. "art. 365 RGLOSNCP") limitan la búsqueda a esos documentos.
+  let restriccionDocs = null;
+  let avisoRestriccion = '';
+  if (exactArticle) {
+    const pistas = consulta.terminosLibres.filter(function(t) { return !/^\d/.test(t); });
+    if (pistas.length) {
+      const candidatos = Object.keys(documentMeta).filter(function(id) {
+        return documentoCoincideConPistas_(documentMeta[id], pistas);
+      });
+      if (candidatos.length) {
+        restriccionDocs = new Set(candidatos);
+      } else {
+        avisoRestriccion = 'No se identificó un documento con "' + pistas.join(' ') + '"; se muestran coincidencias de todas las fuentes. ';
+      }
+    }
+  }
+
+  const scored = [];
   values.forEach(function(row) {
     const id = String(row[0] || '');
     const name = String(row[1] || '');
     const article = String(row[3] || '');
     const text = String(row[4] || '');
-    const url = String(row[5] || '');
-    const meta = documentMeta[id] || {
-      categoriaId: clasificarDocumento_(name, '').id,
-      categoria: clasificarDocumento_(name, '').nombre,
-      carpeta: '',
-      estadoDocumento: ''
-    };
+    const meta = documentMeta[id] || metaPorDefecto_(name);
 
     if (filter && filter !== 'TODAS') {
       if (filter.indexOf('DOC:') === 0 && id !== filter.substring(4)) return;
       if (filter.indexOf('DOC:') !== 0 && meta.categoriaId !== filter) return;
     }
+    if (restriccionDocs && !restriccionDocs.has(id)) return;
+    if (soloVerificadas && !meta.verificado) return;
 
-    const normalizedName = normalizar_(name);
-    const normalizedArticle = normalizar_(article);
-    const normalizedText = normalizar_(text);
+    const nName = normalizar_(name);
+    const nArticle = normalizar_(article);
+    const nText = normalizar_(text);
     let score = 0;
-    const matchedTerms = [];
+    const matched = [];
 
     if (exactArticle) {
       const enEtiqueta = contieneArticuloExacto_(article, exactArticle);
-      const enTexto = contieneArticuloExacto_(text, exactArticle);
+      const enTexto = enEtiqueta || contieneArticuloExacto_(text, exactArticle);
       if (!enEtiqueta && !enTexto) return;
-
-      score = enEtiqueta ? 100 : 80;
-      matchedTerms.push(exactArticle.toLowerCase());
-      // Palabras adicionales (p. ej. "art 26 constitucion") afinan el orden.
-      terms.forEach(function(term) {
-        if (/^\d/.test(term)) return;
-        if (normalizedName.indexOf(term) !== -1 || normalizedText.indexOf(term) !== -1) {
-          matchedTerms.push(term);
-          score += 5;
-        }
+      // Prioriza el fragmento donde el artículo aparece como encabezado propio.
+      const comoEncabezado = encabezadosArticulo_(text).some(function(e) {
+        return String(e.numero).toLowerCase() === exactArticle.replace(/^Art[íi]culo\s+/i, '').toLowerCase();
       });
+      score = comoEncabezado ? 100 : (enEtiqueta ? 70 : 40);
+      matched.push(exactArticle.toLowerCase());
     } else {
-      if (normalizedName.indexOf(query) !== -1) score += 12;
-      if (normalizedText.indexOf(query) !== -1) score += 10;
-
-      terms.forEach(function(term) {
-        const inName = normalizedName.indexOf(term) !== -1;
-        const inArticle = normalizedArticle.indexOf(term) !== -1;
-        const inText = normalizedText.indexOf(term) !== -1;
-        if (inName || inArticle || inText) {
-          matchedTerms.push(term);
-          score += (inName ? 5 : 0) + (inArticle ? 4 : 0) + (inText ? 2 + contarOcurrencias_(normalizedText, term) * 0.3 : 0);
-        }
-      });
-
-      if (terms.length > 1 && matchedTerms.length === terms.length) score += 8;
-      if (terms.length > 1 && matchedTerms.length === 1) score -= 2;
-      if (score <= 0 || matchedTerms.length === 0) return;
+      const ev = evaluarFragmento_(consulta, nName, nArticle, nText);
+      if (!ev) return;
+      score = ev.puntaje;
+      Array.prototype.push.apply(matched, ev.coincidencias);
     }
 
     scored.push({
@@ -545,41 +574,292 @@ function consultarNormativa(pregunta, filtro) {
       tipo: String(row[2] || ''),
       articulo: article,
       texto: text,
-      url: url,
+      url: String(row[5] || ''),
       categoriaId: meta.categoriaId,
       categoria: meta.categoria,
       carpeta: meta.carpeta,
       fechaIndexacion: row[6] ? new Date(row[6]).toISOString() : '',
-      estadoRevision: String(row[7] || 'Sin verificar'),
-      palabrasClave: matchedTerms
+      estadoRevision: meta.verificado ? meta.verificacion : String(row[7] || 'Pendiente de verificación'),
+      verificado: !!meta.verificado,
+      fechaArchivo: meta.fechaArchivo,
+      ultimaModificacion: meta.ultimaModificacion || '',
+      palabrasClave: matched
     });
   });
 
   scored.sort(function(a, b) {
-    return b.score - a.score || a.documento.localeCompare(b.documento, 'es');
+    return b.score - a.score || a.documento.localeCompare(b.documento, 'es') || a.articulo.localeCompare(b.articulo, 'es');
   });
 
-  const results = scored.slice(0, CONFIG.MAX_RESULTS).map(function(item) {
+  const maxScore = scored.length ? scored[0].score : 1;
+  const grupos = {};
+  scored.forEach(function(s) {
+    if (!grupos[s.idFuente]) grupos[s.idFuente] = { idFuente: s.idFuente, documento: s.documento, cantidad: 0, mejor: s.score };
+    grupos[s.idFuente].cantidad++;
+  });
+  const porDocumento = Object.keys(grupos).map(function(k) { return grupos[k]; })
+    .sort(function(a, b) { return b.mejor - a.mejor || b.cantidad - a.cantidad; })
+    .map(function(g) { return { idFuente: g.idFuente, documento: g.documento, cantidad: g.cantidad }; });
+
+  const patrones = consulta.patrones;
+  const results = scored.slice(offset, offset + limite).map(function(item) {
+    item.relevancia = Math.max(1, Math.round(item.score / maxScore * 100));
     delete item.score;
-    enriquecerResultado_(item, exactArticle);
+    enriquecerResultado_(item, exactArticle, patrones);
     return item;
   });
+
+  const descripcionModo = exactArticle ? 'artículo exacto'
+    : (modo === 'FRASE' ? 'frase exacta' : (modo === 'CUALQUIERA' ? 'cualquier palabra' : 'todas las palabras'));
 
   return {
     ok: true,
     pregunta: rawQuestion,
     filtro: filter,
+    modo: exactArticle ? 'ARTICULO' : modo,
+    descripcionModo: descripcionModo,
+    frases: consulta.frases,
     resultados: results,
+    offset: offset,
     total: results.length,
     totalCoincidencias: scored.length,
-    aviso: results.length
+    hayMas: offset + results.length < scored.length,
+    porDocumento: porDocumento,
+    excluidos: excluidos,
+    aviso: avisoRestriccion + (scored.length
       ? (exactArticle
           ? 'Coincidencias del ' + exactArticle + '. Revisa el nombre de la fuente y verifica el texto con el documento oficial.'
-          : 'Resultados ordenados por coincidencia. Verifica siempre la fuente oficial.')
+          : 'Resultados ordenados por relevancia (' + descripcionModo + '). Verifica siempre la fuente oficial.')
       : (exactArticle
           ? 'No se encontró el ' + exactArticle + ' en los fragmentos indexados para esta fuente. Puede ser necesario revisar la extracción o volver a indexar el documento correspondiente.'
-          : 'No se encontraron coincidencias suficientemente relacionadas. Prueba con términos más específicos o cambia la fuente.')
+          : (modo === 'TODAS'
+              ? 'Ningún fragmento contiene todas las palabras. Prueba el modo «Cualquier palabra» o cambia la fuente.'
+              : 'No se encontraron coincidencias. Prueba con otros términos o cambia la fuente.')))
   };
+}
+
+/* ---------- Apoyo a la consulta ---------- */
+
+const STOP_WORDS_ = {
+  como:1, que:1, para:1, por:1, con:1, del:1, las:1, los:1, una:1, uno:1,
+  unos:1, unas:1, de:1, la:1, el:1, y:1, o:1, en:1, al:1, se:1, me:1, mi:1, un:1, es:1,
+  sus:1, su:1, entre:1, sobre:1, sin:1, este:1, esta:1, cual:1, cuales:1
+};
+
+const ALIAS_NORMAS_ = {
+  rglosncp: ['reglamento', 'contratacion publica'],
+  losncp: ['ley organica', 'contratacion publica'],
+  cre: ['constitucion'],
+  constitucion: ['constitucion'],
+  coip: ['coip|codigo organico integral penal'],
+  cootad: ['cootad|organizacion territorial'],
+  losep: ['losep|servicio publico'],
+  cogep: ['cogep|codigo organico general de procesos'],
+  coa: ['codigo organico administrativo'],
+  nec: ['nec|norma ecuatoriana de la construccion'],
+  loscca: ['contraloria'],
+  locge: ['contraloria']
+};
+
+function escaparRegex_(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** Variantes singular/plural de un término normalizado. */
+function variantesTermino_(t) {
+  const v = [t];
+  if (t.length > 4 && /es$/.test(t)) v.push(t.slice(0, -2));
+  if (t.length > 3 && /s$/.test(t)) v.push(t.slice(0, -1));
+  return v;
+}
+
+/** Patrón de palabra completa (admite plural) sobre texto normalizado. */
+function patronTermino_(t) {
+  const base = variantesTermino_(t).map(escaparRegex_).join('|');
+  return '(?<![\\p{L}\\p{N}])(?:' + base + ')(?:es|s)?(?![\\p{L}\\p{N}])';
+}
+
+/** Patrón de frase exacta: palabras consecutivas, separadas por espacios o signos. */
+function patronFrase_(frase) {
+  return '(?<![\\p{L}\\p{N}])' + frase.split(' ').map(escaparRegex_).join('[^\\p{L}\\p{N}]+') + '(?![\\p{L}\\p{N}])';
+}
+
+function analizarConsulta_(raw, modo) {
+  const frases = [];
+  let resto = String(raw || '').replace(/["“”«»]([^"“”«»]+)["“”«»]/g, function(_, f) {
+    const n = normalizar_(f).replace(/[.-]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (n) frases.push(n);
+    return ' ';
+  });
+  const terminosLibres = normalizar_(resto).replace(/[.-]/g, ' ').split(/\s+/).filter(function(t) {
+    return t && !STOP_WORDS_[t] && t !== 'articulo' && t !== 'art';
+  });
+  let terminos = terminosLibres.filter(function(t) { return t.length > 2 || /^\d+$/.test(t); });
+
+  if (modo === 'FRASE' && !frases.length) {
+    const f = normalizar_(resto).replace(/[.-]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (f) frases.push(f);
+    terminos = [];
+  }
+
+  const patrones = [];
+  frases.forEach(function(f) { patrones.push({ tipo: 'frase', texto: f, re: patronFrase_(f) }); });
+  terminos.forEach(function(t) { patrones.push({ tipo: 'termino', texto: t, re: patronTermino_(t) }); });
+
+  // Frase implícita: la consulta completa como texto continuo suma relevancia.
+  const fraseImplicita = terminos.length > 1 ? terminosLibres.join(' ') : '';
+
+  return {
+    modo: modo,
+    frases: frases,
+    terminos: terminos,
+    terminosLibres: terminosLibres,
+    patrones: patrones,
+    fraseImplicita: fraseImplicita ? patronFrase_(fraseImplicita) : ''
+  };
+}
+
+function posiciones_(texto, patron) {
+  const re = typeof patron === 'string' ? new RegExp(patron, 'gu') : patron;
+  re.lastIndex = 0;
+  const out = [];
+  let m;
+  while ((m = re.exec(texto)) !== null && out.length < 200) {
+    out.push(m.index);
+    if (!m[0]) re.lastIndex++;
+  }
+  return out;
+}
+
+/** Menor distancia (en caracteres) que contiene una aparición de cada término. */
+function ventanaMinima_(listas) {
+  const eventos = [];
+  listas.forEach(function(l, k) { l.forEach(function(p) { eventos.push([p, k]); }); });
+  eventos.sort(function(a, b) { return a[0] - b[0]; });
+  const cuenta = {};
+  let distintos = 0;
+  let ini = 0;
+  let mejor = Infinity;
+  for (let fin = 0; fin < eventos.length; fin++) {
+    const k = eventos[fin][1];
+    if (!cuenta[k]) distintos++;
+    cuenta[k] = (cuenta[k] || 0) + 1;
+    while (distintos === listas.length) {
+      mejor = Math.min(mejor, eventos[fin][0] - eventos[ini][0]);
+      const ki = eventos[ini][1];
+      cuenta[ki]--;
+      if (!cuenta[ki]) distintos--;
+      ini++;
+    }
+  }
+  return mejor;
+}
+
+/**
+ * Evalúa un fragmento. Devuelve null si no cumple el modo de búsqueda.
+ * Puntaje: cobertura de términos, frase completa, cercanía entre términos,
+ * frecuencia (con tope) y presencia en la etiqueta de artículo o en el nombre.
+ */
+function evaluarFragmento_(consulta, nName, nArticle, nText) {
+  const patrones = consulta.patrones;
+  if (!patrones.length) return null;
+  let puntaje = 0;
+  const coincidencias = [];
+  const listasTexto = [];
+  let cumplidos = 0;
+
+  patrones.forEach(function(p) {
+    if (!p.reG) { p.reG = new RegExp(p.re, 'gu'); p.reU = new RegExp(p.re, 'u'); }
+    const enTexto = posiciones_(nText, p.reG);
+    const enNombre = p.reU.test(nName);
+    const enArticulo = p.reU.test(nArticle);
+    if (!enTexto.length && !enNombre && !enArticulo) return;
+    cumplidos++;
+    coincidencias.push(p.texto);
+    const pesoFrase = p.tipo === 'frase' ? 3 : 1;
+    puntaje += (enTexto.length ? 10 + Math.min(12, 4 * Math.log2(1 + enTexto.length)) : 0) * pesoFrase;
+    puntaje += (enNombre ? 6 : 0) + (enArticulo ? 6 : 0);
+    if (enTexto.length) listasTexto.push(enTexto);
+  });
+
+  if (!cumplidos) return null;
+  if (consulta.modo !== 'CUALQUIERA' && cumplidos < patrones.length) return null;
+
+  puntaje += 30 * cumplidos / patrones.length;
+  if (consulta.fraseImplicita) {
+    if (!consulta.reImplicita) consulta.reImplicita = new RegExp(consulta.fraseImplicita, 'u');
+    if (consulta.reImplicita.test(nText)) puntaje += 40;
+  }
+  if (listasTexto.length > 1) {
+    const v = ventanaMinima_(listasTexto);
+    if (v <= 60) puntaje += 25;
+    else if (v <= 250) puntaje += 15;
+    else if (v <= 800) puntaje += 5;
+  }
+  return { puntaje: puntaje, coincidencias: coincidencias };
+}
+
+function documentoCoincideConPistas_(meta, pistas) {
+  const nombre = normalizar_(meta.nombre + ' ' + meta.carpeta);
+  return pistas.every(function(p) {
+    const alias = ALIAS_NORMAS_[p];
+    if (alias) return alias.every(function(a) { return new RegExp(a).test(nombre); });
+    return new RegExp(patronTermino_(p), 'u').test(nombre);
+  });
+}
+
+function metaPorDefecto_(name) {
+  const cat = clasificarDocumento_(name, '');
+  return {
+    nombre: name, categoriaId: cat.id, categoria: cat.nombre, carpeta: '', estadoDocumento: '',
+    disponible: true, verificado: false, verificacion: '', fechaArchivo: fechaEnNombre_(name), ultimaModificacion: ''
+  };
+}
+
+/** Fecha incluida en el nombre del archivo (AAAA-MM-DD o DD-MM-AAAA). */
+function fechaEnNombre_(nombre) {
+  const s = String(nombre || '');
+  let m = s.match(/(20\d{2}|19\d{2})[-_.](\d{2})[-_.](\d{2})/);
+  if (m) return m[1] + '-' + m[2] + '-' + m[3];
+  m = s.match(/(\d{2})[-_.](\d{2})[-_.](20\d{2}|19\d{2})/);
+  if (m) return m[3] + '-' + m[2] + '-' + m[1];
+  return '';
+}
+
+function estadoDisponible_(estado) {
+  return /^Texto extraído\s*(?:;|\()/i.test(estado)
+    && !/principalmente índice|sin texto|error|omitido/i.test(estado);
+}
+
+/**
+ * Lee la hoja Documentos. La columna 8 ("Verificación") la completa el
+ * administrador a mano: un valor que empiece por "Verificado" marca la fuente
+ * como verificada (p. ej. "Verificado 2026-10-15 – texto cotejado con RO").
+ */
+function leerMetadatosDocumentos_(docSheet) {
+  const out = {};
+  if (!docSheet || docSheet.getLastRow() < 2) return out;
+  const ancho = Math.min(8, Math.max(7, docSheet.getLastColumn()));
+  docSheet.getRange(2, 1, docSheet.getLastRow() - 1, ancho).getDisplayValues().forEach(function(row) {
+    if (!row[0]) return;
+    const cat = clasificarDocumento_(row[1], row[4]);
+    const verif = String(row[7] || '').trim();
+    const estado = String(row[6] || '');
+    out[String(row[0])] = {
+      nombre: String(row[1] || ''),
+      categoriaId: cat.id,
+      categoria: cat.nombre,
+      carpeta: String(row[4] || ''),
+      url: String(row[3] || ''),
+      estadoDocumento: estado,
+      disponible: estadoDisponible_(estado),
+      verificado: /^verificad[oa]/i.test(verif),
+      verificacion: verif,
+      fechaArchivo: fechaEnNombre_(row[1]),
+      ultimaModificacion: ''
+    };
+  });
+  return out;
 }
 
 /* =========================================================================
@@ -701,6 +981,14 @@ function getOrCreateSheet_(ss, name, headers) {
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
     sheet.setFrozenRows(1);
     sheet.getRange(1, 1, 1, headers.length).setFontWeight('bold');
+  } else {
+    // Agrega encabezados nuevos (p. ej. "Verificación") sin tocar los datos.
+    const actuales = sheet.getRange(1, 1, 1, headers.length).getValues()[0];
+    headers.forEach(function(h, k) {
+      if (!String(actuales[k] || '').trim()) {
+        sheet.getRange(1, k + 1).setValue(h).setFontWeight('bold');
+      }
+    });
   }
   return sheet;
 }
@@ -952,23 +1240,98 @@ function quitarEncabezadoPosterior_(texto) {
   return salida;
 }
 
-function enriquecerResultado_(item, exactArticle) {
+/**
+ * Limpieza para mostrar (no se aplica al índice, para no perder los folios
+ * que sirven para calcular la página). Además de lo que retira
+ * limpiarEncabezadosPies_, quita líneas de encabezado/pie editorial como
+ * "REGLAMENTO DE LA LEY ... Página 180 de 223", "CÓDIGO ... - Página 113" y
+ * "LEXIS FINDER - www.lexis.com.ec". Devuelve el texto limpio y una función
+ * que traduce una posición del texto limpio a la posición en el original.
+ */
+function limpiarParaMostrarConMapa_(original) {
+  const texto = String(original || '').replace(/\r/g, '');
+  const lineas = texto.split('\n');
+  const partes = [];
+  const iniciosLimpio = [];
+  const iniciosOriginal = [];
+  let posOriginal = 0;
+  let largoLimpio = 0;
+  let blancoPrevio = true;
+
+  lineas.forEach(function(linea) {
+    const inicio = posOriginal;
+    posOriginal += linea.length + 1;
+    const t = linea.replace(/\s+/g, ' ').trim();
+    if (!t) {
+      if (blancoPrevio) return;
+      blancoPrevio = true;
+    } else {
+      if (esLineaEditorial_(t)) return;
+      blancoPrevio = false;
+    }
+    const conservada = linea.replace(/\s+$/, '');
+    if (partes.length) largoLimpio += 1; // salto de línea
+    iniciosLimpio.push(largoLimpio);
+    iniciosOriginal.push(inicio);
+    partes.push(conservada);
+    largoLimpio += conservada.length;
+  });
+
+  const limpio = partes.join('\n');
+  function aOriginal(pos) {
+    let lo = 0;
+    let hi = iniciosLimpio.length - 1;
+    if (hi < 0) return 0;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (iniciosLimpio[mid] <= pos) lo = mid; else hi = mid - 1;
+    }
+    return iniciosOriginal[lo] + Math.max(0, pos - iniciosLimpio[lo]);
+  }
+  return { texto: limpio, aOriginal: aOriginal };
+}
+
+function esLineaEditorial_(t) {
+  if (/^Registro Oficial\s*[-–—:]?\s*(?:Cuarto|Tercer|Segundo|Primer)?\s*Suplemento\b/i.test(t)) return true;
+  if (/^(?:Cuarto|Tercer|Segundo|Primer)\s+Suplemento\s*(?:N[.º°o]?\s*)?\d*\s*[-–—:]/i.test(t)) return true;
+  if (/^(?:Edici[oó]n|Suplemento)\s+(?:Especial\s+)?N[.º°o]?\s*\d+.*Registro Oficial/i.test(t)) return true;
+  if (/^(?:lunes|martes|mi[eé]rcoles|jueves|viernes|s[aá]bado|domingo)\s+\d{1,2}\s+de\s+[a-záéíóúñ]+\s+de\s+\d{4}$/i.test(t)) return true;
+  if (/^\d{1,4}$/.test(t)) return true;
+  if (/^\d{1,4}\s*\/\s*\d{1,4}$/.test(t)) return true;
+  if (/^(?:p[aá]gina|p[aá]g\.?)\s*\d{1,4}(?:\s+de\s+\d{1,4})?$/i.test(t)) return true;
+  // Título de la norma seguido del folio: "... Página 180 de 223" / "... - Página 113".
+  if (t.length <= 200) {
+    const m = t.match(/^(.*?)\s*P[áa]gina\s*\d{1,4}(?:\s+de\s+\d{1,4})?$/i);
+    if (m) {
+      const antes = m[1].trim();
+      // Solo si lo previo es un título en mayúsculas o termina en guion.
+      if (!antes || /[-–—]$/.test(antes) || antes === antes.toLocaleUpperCase('es')) return true;
+    }
+  }
+  if (/^LEXIS\s+FINDER\b/i.test(t)) return true;
+  if (/^(?:www\.|https?:\/\/)\S+$/i.test(t)) return true;
+  return false;
+}
+
+/**
+ * Prepara el resultado para mostrar:
+ * - limpia encabezados/pies editoriales;
+ * - si la pregunta solicita un artículo exacto, devuelve SOLO ese artículo;
+ * - en búsquedas temáticas, muestra el artículo que mejor coincide;
+ * - calcula la página donde está la coincidencia y el rango de páginas del
+ *   extracto, a partir de los folios impresos en el propio documento.
+ */
+function enriquecerResultado_(item, exactArticle, patrones) {
   const textoOriginal = String(item.texto || '');
   if (!textoOriginal) return item;
 
-  const paginaOriginal = paginaSegunPie_(textoOriginal, 0);
-  const texto = limpiarEncabezadosPies_(textoOriginal)
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  const limpieza = limpiarParaMostrarConMapa_(textoOriginal);
+  const texto = limpieza.texto;
 
   const enc = encabezadosArticulo_(texto);
   const etiqueta = etiquetaDesdeEncabezados_(enc);
   if (etiqueta) item.articulo = etiqueta;
 
-  // Recupera el encabezado estructural más cercano anterior al artículo o
-  // al fragmento seleccionado. Solo usa encabezados presentes en el texto
-  // extraído; no inventa secciones ni toma encabezados posteriores.
   function contextoAntesDe_(posicion) {
     const antes = texto.slice(0, Math.max(0, posicion));
     const lineas = antes.split('\n');
@@ -978,8 +1341,6 @@ function enriquecerResultado_(item, exactArticle) {
       const linea = String(lineas[i] || '').trim();
       const m = linea.match(reContexto);
       if (!m) continue;
-      // Conservar el título descriptivo que sigue a la sección/capítulo,
-      // por ejemplo: "Sección octava\nTrabajo y seguridad social".
       const partes = [linea];
       const siguiente = String(lineas[i + 1] || '').trim();
       const pareceTitulo = siguiente && siguiente.length <= 180 &&
@@ -1002,71 +1363,67 @@ function enriquecerResultado_(item, exactArticle) {
     for (let k = 0; k < segmentos.length; k++) {
       const e = enc.filter(function(x) { return x.index === segmentos[k].ini; })[0];
       if (e && String(e.numero).toLowerCase() === num) {
-        mejor = { ini: segmentos[k].ini, fin: segmentos[k].fin, pos: segmentos[k].ini, numero: e.numero };
+        mejor = { ini: segmentos[k].ini, fin: segmentos[k].fin, pos: segmentos[k].ini };
         break;
       }
     }
-  }
-
-  if (!mejor) {
-    const norm = normalizarPosicional_(texto);
-    const terminos = (item.palabrasClave || []).map(function(t) { return normalizar_(t); })
-      .filter(function(t) { return t && t.length > 2 && !/^articulo\s/.test(t); });
-
-    if (terminos.length) {
-      let mejorPuntaje = 0;
-      segmentos.forEach(function(sg) {
-        const trozo = norm.slice(sg.ini, sg.fin);
-        let distintos = 0;
-        let total = 0;
-        let primera = -1;
-        terminos.forEach(function(t) {
-          const p = trozo.indexOf(t);
-          if (p === -1) return;
-          distintos++;
-          if (primera === -1 || p < primera) primera = p;
-          total += contarOcurrencias_(trozo, t);
-        });
-        const puntaje = distintos * 100 + total;
-        if (puntaje > mejorPuntaje) {
-          mejorPuntaje = puntaje;
-          mejor = { ini: sg.ini, fin: sg.fin, pos: sg.ini + Math.max(primera, 0) };
-        }
-      });
+    if (!mejor) {
+      // El artículo se menciona dentro de otro: se ubica la mención.
+      const norm = normalizarPosicional_(texto);
+      const re = new RegExp('(?:articulo|art)\\.?\\s*' + escaparRegex_(num) + '(?![0-9a-z])', 'i');
+      const m = re.exec(norm);
+      if (m) {
+        const sg = segmentos.filter(function(x) { return x.ini <= m.index && m.index < x.fin; })[0];
+        if (sg) mejor = { ini: sg.ini, fin: sg.fin, pos: m.index };
+      }
     }
+  } else if (patrones && patrones.length) {
+    const norm = normalizarPosicional_(texto);
+    let mejorPuntaje = 0;
+    segmentos.forEach(function(sg) {
+      const trozo = norm.slice(sg.ini, sg.fin);
+      let distintos = 0;
+      let total = 0;
+      let primera = -1;
+      patrones.forEach(function(p) {
+        const pos = posiciones_(trozo, p.re);
+        if (!pos.length) return;
+        distintos += p.tipo === 'frase' ? 3 : 1;
+        total += Math.min(10, pos.length);
+        if (primera === -1 || pos[0] < primera) primera = pos[0];
+      });
+      const puntaje = distintos * 100 + total;
+      if (puntaje > mejorPuntaje) {
+        mejorPuntaje = puntaje;
+        mejor = { ini: sg.ini, fin: sg.fin, pos: sg.ini + Math.max(primera, 0) };
+      }
+    });
   }
 
-  // Si se detectó un artículo concreto, el cuerpo principal y la exportación
-  // pasan a contener ese artículo, no el fragmento de varios artículos.
+  item.paginaNota = 'según el folio impreso en el documento';
   if (mejor) {
     item.contextoNormativo = contextoAntesDe_(mejor.ini);
-    let cuerpo = texto.slice(mejor.ini, mejor.fin).trim();
-    cuerpo = limpiarEncabezadosPies_(cuerpo)
-      .replace(/[ \t]+\n/g, '\n')
-      .replace(/\n{3,}/g, '\n\n')
-      .trim();
-    cuerpo = quitarEncabezadoPosterior_(cuerpo);
-
+    let cuerpo = quitarEncabezadoPosterior_(texto.slice(mejor.ini, mejor.fin).trim());
     const encSeg = enc.filter(function(e) { return e.index === mejor.ini; })[0];
     if (encSeg) {
       item.articuloCoincidente = 'Artículo ' + encSeg.numero;
       item.articulo = 'Artículo ' + encSeg.numero;
     }
-
     if (cuerpo) {
-      item.texto = cuerpo;
       item.extracto = cuerpo;
     }
-    item.pagina = paginaOriginal || paginaSegunPie_(textoOriginal, mejor.pos);
+    item.pagina = paginaSegunPie_(textoOriginal, limpieza.aOriginal(mejor.pos));
+    item.paginaInicio = paginaSegunPie_(textoOriginal, limpieza.aOriginal(mejor.ini));
+    item.paginaFin = paginaSegunPie_(textoOriginal, limpieza.aOriginal(Math.max(mejor.ini, mejor.fin - 1)));
   } else {
-    // Para búsquedas temáticas, asocia solo el encabezado estructural anterior
-    // al segmento que mejor coincide, si está presente en el texto indexado.
-    const posicionContexto = mejor ? mejor.ini : 0;
-    item.contextoNormativo = contextoAntesDe_(posicionContexto);
-    // Para búsquedas temáticas, mostrar un extracto legible sin cabeceras.
+    item.contextoNormativo = contextoAntesDe_(0);
     item.extracto = texto.length > 3000 ? texto.slice(0, 3000).trim() + ' …' : texto;
-    item.pagina = paginaOriginal;
+    item.pagina = paginaSegunPie_(textoOriginal, 0);
+    item.paginaInicio = item.pagina;
+    item.paginaFin = paginaSegunPie_(textoOriginal, Math.max(0, textoOriginal.length - 1));
   }
+  // El fragmento completo también se entrega limpio.
+  item.texto = texto;
   return item;
 }
 
@@ -1124,11 +1481,86 @@ async function convertirPdfYExtraerTexto_(file) {
     INFO_PDF_ = 'sin dividir; si supera 80 páginas el texto puede estar incompleto';
     return ocrBlob_(blob, file.getName());
   }
-  const textos = division.partes.map(function(parte, k) {
-    return ocrBlob_(parte, file.getName() + (division.partes.length > 1 ? ' - parte ' + (k + 1) : ''));
-  });
-  INFO_PDF_ = division.total + ' páginas' + (division.partes.length > 1 ? ' en ' + division.partes.length + ' tramos' : '');
-  return textos.join('\n');
+  const fallidos = [];
+  const textos = [];
+  for (let k = 0; k < division.partes.length; k++) {
+    const desde = k * CONFIG.OCR_MAX_PAGINAS + 1;
+    const hasta = Math.min(division.total, desde + CONFIG.OCR_MAX_PAGINAS - 1);
+    const nombre = file.getName() + (division.partes.length > 1 ? ' - parte ' + (k + 1) : '');
+    textos.push(await ocrConReintento_(division.partes[k], nombre, desde, hasta, fallidos));
+  }
+  INFO_PDF_ = division.total + ' páginas' + (division.partes.length > 1 ? ' en ' + division.partes.length + ' tramos' : '')
+    + (fallidos.length ? '; OCR incompleto en págs. ' + fallidos.join(', ') + ' — texto incompleto' : '');
+  const unido = textos.join('\n');
+  if (!unido.trim() && fallidos.length) {
+    throw new Error('El OCR no devolvió texto en ningún tramo (págs. ' + fallidos.join(', ') + ').');
+  }
+  return unido;
+}
+
+/**
+ * OCR de un tramo. Si falla o devuelve vacío, lo divide en mitades (hasta
+ * tramos de OCR_MIN_PAGINAS) y reintenta; los tramos que siguen sin texto se
+ * registran en "fallidos" para que el estado del documento lo informe.
+ */
+async function ocrConReintento_(blob, nombre, desde, hasta, fallidos) {
+  let error = null;
+  try {
+    const t = ocrBlob_(blob, nombre);
+    if (t && t.trim()) return t;
+  } catch (e) {
+    error = e;
+  }
+  const paginas = hasta - desde + 1;
+  if (paginas > CONFIG.OCR_MIN_PAGINAS) {
+    try {
+      const mitad = Math.ceil(paginas / 2);
+      const sub = await dividirPdfEnTramos_(blob, mitad);
+      if (sub.partes.length > 1) {
+        const a = await ocrConReintento_(sub.partes[0], nombre + ' a', desde, desde + mitad - 1, fallidos);
+        const b = await ocrConReintento_(sub.partes[1], nombre + ' b', desde + mitad, hasta, fallidos);
+        return [a, b].filter(Boolean).join('\n');
+      }
+    } catch (e) {
+      console.warn('No se pudo subdividir ' + nombre + ': ' + e);
+    }
+  }
+  console.warn('Tramo sin texto ' + nombre + ' (págs. ' + desde + '-' + hasta + '): ' + (error ? error.message || error : 'vacío'));
+  fallidos.push(desde + '–' + hasta);
+  return '';
+}
+
+/**
+ * Lista en el registro los documentos que no participan en la búsqueda
+ * (sin texto, error u omitidos) con su estado y número de páginas.
+ * Para volver a procesarlos, ejecutar después reintentarErrores().
+ */
+async function diagnosticarDocumentosSinTexto() {
+  const sh = getSpreadsheet_().getSheetByName(CONFIG.SHEET_DOCUMENTS);
+  if (!sh || sh.getLastRow() < 2) return [];
+  const filas = sh.getRange(2, 1, sh.getLastRow() - 1, 7).getValues();
+  const salida = [];
+  for (let i = 0; i < filas.length; i++) {
+    const estado = String(filas[i][6] || '');
+    if (estadoDisponible_(estado) && !/texto incompleto/i.test(estado)) continue;
+    let paginas = '';
+    try {
+      if (String(filas[i][2]).toLowerCase().indexOf('pdf') !== -1) {
+        paginas = await contarPaginasPdf_(DriveApp.getFileById(String(filas[i][0])).getBlob());
+      }
+    } catch (e) {
+      paginas = 'no se pudo leer: ' + e.message;
+    }
+    salida.push({ documento: filas[i][1], estado: estado, paginas: paginas, url: filas[i][3] });
+  }
+  console.log(JSON.stringify(salida, null, 2));
+  return salida;
+}
+
+/** Agrega la columna "Verificación" a la hoja Documentos si falta. */
+function prepararColumnaVerificacion() {
+  getOrCreateSheet_(getSpreadsheet_(), CONFIG.SHEET_DOCUMENTS, HEADERS_DOCUMENTS);
+  return 'Columna H "Verificación" lista. Escribe "Verificado" (y opcionalmente fecha y nota) en las fuentes cotejadas.';
 }
 
 /**
@@ -1140,7 +1572,7 @@ async function reindexarPdfsGrandes() {
   const docSheet = getOrCreateSheet_(ss, CONFIG.SHEET_DOCUMENTS, HEADERS_DOCUMENTS);
   const artSheet = getOrCreateSheet_(ss, CONFIG.SHEET_ARTICLES, HEADERS_ARTICLES);
   if (docSheet.getLastRow() < 2) return await procesarIndexacion_();
-  const docs = docSheet.getRange(2, 1, docSheet.getLastRow() - 1, 7).getValues();
+  const docs = docSheet.getRange(2, 1, docSheet.getLastRow() - 1, 8).getValues();
   const rehacer = new Set();
   for (let i = 0; i < docs.length; i++) {
     const id = String(docs[i][0] || '');
@@ -1154,7 +1586,7 @@ async function reindexarPdfsGrandes() {
     }
   }
   if (!rehacer.size) return { ok: true, message: 'No hay PDF de más de ' + CONFIG.OCR_MAX_PAGINAS + ' páginas.' };
-  replaceSheetBody_(docSheet, docs.filter(function(r) { return !rehacer.has(String(r[0])); }), 7);
+  replaceSheetBody_(docSheet, docs.filter(function(r) { return !rehacer.has(String(r[0])); }), 8);
   if (artSheet.getLastRow() >= 2) {
     const arts = artSheet.getRange(2, 1, artSheet.getLastRow() - 1, 8).getValues()
       .filter(function(r) { return !rehacer.has(String(r[0])); });
