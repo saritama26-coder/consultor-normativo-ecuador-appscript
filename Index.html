@@ -442,8 +442,24 @@ const right = document.createElement('div'); right.className = 'rheadright no-pr
 const copy = document.createElement('button'); copy.type = 'button'; copy.className = 'iconbtn';
 copy.title = 'Copiar texto completo'; copy.setAttribute('aria-label', 'Copiar texto completo');
 copy.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span>Copiar texto</span>';
-copy.addEventListener('click', function() {
-copyText(titleText + '\n' + (item.documento || '') + '\n\n' + limpiarPiesDePagina(item.extracto || item.texto || ''), copy, 'Copiado');
+const share = document.createElement('button');
+share.type = 'button'; share.className = 'iconbtn';
+share.title = 'Compartir resultado'; share.setAttribute('aria-label', 'Compartir resultado');
+share.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="18" cy="5" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="6" cy="12" r="3" stroke="currentColor" stroke-width="1.8"/><circle cx="18" cy="19" r="3" stroke="currentColor" stroke-width="1.8"/><path d="m8.7 10.6 6.6-4.2M8.7 13.4l6.6 4.2" stroke="currentColor" stroke-width="1.8"/></svg><span>Compartir</span>';
+const shareText = titleText + '\n' + (item.documento || '') + '\n\n' + limpiarPiesDePagina(item.extracto || item.texto || '');
+share.addEventListener('click', async function() {
+  const shareData = { title: titleText, text: shareText, url: item.url || window.location.href };
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+    } else {
+      await copyText(shareText + (item.url ? '\n\nDocumento original: ' + item.url : ''), share, 'Copiado para compartir');
+    }
+  } catch (e) {
+    if (e && e.name !== 'AbortError') {
+      copyText(shareText + (item.url ? '\n\nDocumento original: ' + item.url : ''), share, 'Copiado para compartir');
+    }
+  }
 });
 const bookmark = document.createElement('button');
 bookmark.type = 'button';
@@ -456,7 +472,7 @@ updateBookmarkButton(bookmark, item);
 updateBookmarkButton(bookmark, item);
 const num = document.createElement('span'); num.className = 'rnum';
 num.textContent = 'RESULTADO ' + String(index + 1).padStart(2, '0');
-right.append(copy, bookmark, num); head.append(title, right);
+right.append(copy, share, bookmark, num); head.append(title, right);
 const meta = document.createElement('div'); meta.className = 'meta';
 const doc = document.createElement('strong'); doc.textContent = item.documento || 'Documento sin título';
 meta.appendChild(doc);
@@ -525,7 +541,33 @@ results.appendChild(notice);
 const exportRow = document.createElement('div'); exportRow.className = 'rtools no-print';
 const exportBtn = document.createElement('button'); exportBtn.className = 'btn'; exportBtn.type = 'button';
 exportBtn.textContent = 'Exportar resultados a PDF';
-exportBtn.addEventListener('click', function() { window.print(); });
+exportBtn.addEventListener('click', function() {
+  const cards = Array.from(results.querySelectorAll('.result'));
+  if (!cards.length) {
+    window.alert('Primero realiza una consulta para generar resultados que puedas exportar.');
+    return;
+  }
+  const printable = cards.map(function(card) {
+    const clone = card.cloneNode(true);
+    clone.querySelectorAll('.no-print, .rtools, .rheadright').forEach(function(el) { el.remove(); });
+    clone.classList.remove('print-target');
+    return clone.outerHTML;
+  }).join('\n');
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    // Respaldo para navegadores que bloquean ventanas emergentes.
+    window.print();
+    return;
+  }
+  printWindow.document.open();
+  printWindow.document.write('<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Consulta normativa - PDF</title><style>@page{size:A4;margin:18mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;font-size:12pt;line-height:1.5;margin:0}.result{margin:0 0 16pt;padding:0;break-inside:auto}.result h3{font-size:13pt;margin:0 0 7pt}.meta{font-size:10pt;color:#444;margin:0 0 9pt}.snippet{white-space:pre-wrap;overflow-wrap:anywhere;font-size:11pt;line-height:1.5}.norm-context{font-weight:bold;margin-bottom:8pt}.norm-list{margin:4pt 0 8pt 18pt;padding:0}.norm-list li{margin:2pt 0}.norm-subheading{font-weight:bold}mark{background:transparent;color:#000}@media screen{body{padding:18px;max-width:850px;margin:auto}.print-help{padding:10px;background:#eef5ef;margin-bottom:15px;border-radius:8px;font-size:12px}}@media print{.print-help{display:none}}</style></head><body><div class="print-help">Para guardar como PDF, usa Compartir o Imprimir en el navegador y selecciona «Guardar como PDF».</div>' + printable + '</body></html>');
+  printWindow.document.close();
+  printWindow.focus();
+  // La ventana separada permite que Safari/iOS y navegadores móviles impriman el contenido.
+  window.setTimeout(function() {
+    try { printWindow.print(); } catch (e) {}
+  }, 700);
+});
 exportRow.appendChild(exportBtn); results.appendChild(exportRow);
 }
 /* ---------- Marcadores guardados en este navegador ---------- */
