@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#14392F">
+<meta name="description" content="Herramienta de consulta documental jurídica y técnica de Ecuador.">
 <title>Consultor Normativo Ecuador</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20viewBox%3D%220%200%2064%2064%22%20aria-hidden%3D%22true%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2212%22%20fill%3D%22%2314392F%22/%3E%3Cpath%20d%3D%22M15%209h23l11%2011v15M38%209v12h11M20%2018h13M20%2024h11M20%2030h8M12%2052V12a3%203%200%200%201%203-3h23l11%2011v15M12%2052h12%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%223%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3Cpath%20d%3D%22M25%2039%2040%2031%2055%2039v2H25zM29%2043h22M31%2043v9m7-9v9m7-9v9M27%2054h25M24%2058h31%22%20fill%3D%22none%22%20stroke%3D%22%23fff%22%20stroke-width%3D%222.7%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22/%3E%3C/svg%3E">
 <style>
@@ -211,33 +212,66 @@ mark{background:#fff1b8;color:inherit;border-radius:3px;padding:0 2px}.snippet.c
 }
 @media print{.summary,.loadmore,.badges .rel{display:none!important}.badge{border:0!important;padding:0 6pt 0 0!important;font-size:9pt!important}}
 
+
+/* ===== Dirección visual 2026 · Operate / consulta jurídica ===== */
+:root{--green:#173f32;--green2:#25634d;--ink:#1d3028;--muted:#687970;--line:#dbe4dd;--bg:#f2f5f2;--mint:#edf4ee;--paper:#fff;--amber:#fbf5e8;--focus:#c38a32;font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif;color:var(--ink);background:var(--bg)}
+body,button,input,select{font-family:Arial,Helvetica,sans-serif}
+body{background:linear-gradient(90deg,#edf2ed 0,#f5f7f4 50%,#edf2ed 100%);color:var(--ink)}
+.top{background:#122f27;border-bottom:1px solid #ffffff18;position:relative;z-index:2}
+.topin{max-width:1320px;min-height:70px;width:calc(100% - 64px)}
+.brand-wrap{gap:13px}.brand-mark{width:40px;height:40px}.brand{font-size:15px;letter-spacing:-.015em}.subbrand{font-size:9px;letter-spacing:.11em;color:#c5d8cc}.top-meta{display:flex;align-items:center;gap:17px}.toplabel{border:1px solid #8ba99a55;border-radius:4px;padding:7px 10px;color:#e1ece4;font-size:10px;letter-spacing:.04em}.top-meta-note{font:11px Arial,sans-serif;color:#a9c0b2;letter-spacing:.02em}
+.hero{background:#1b493b;color:#fff;position:relative;overflow:hidden;border-bottom:1px solid #2c5a49}
+.hero:after{content:"";position:absolute;right:0;top:0;bottom:0;width:40%;opacity:.17;background:repeating-linear-gradient(135deg,transparent 0 23px,#8aaf98 24px,#8aaf98 25px,transparent 26px 48px);mask-image:linear-gradient(90deg,transparent,#000)}
+.heroin{max-width:1320px;width:calc(100% - 64px);padding:31px 0 48px;position:relative;z-index:1}
+.hero-content{display:flex;align-items:flex-end;justify-content:space-between;gap:28px}.hero-copy{max-width:700px}.eyebrow{font:700 9px Arial,sans-serif;letter-spacing:.16em;color:#c2d7ca;display:flex;align-items:center;gap:9px}.eyebrow-mark{width:17px;height:1px;background:#d4b36d;display:inline-block}
+.hero h1{font:500 clamp(30px,3.4vw,43px)/1.08 Georgia,"Iowan Old Style",serif;letter-spacing:-.035em;margin:12px 0 10px}.hero p{font:13px/1.7 Arial,sans-serif;color:#dce8df;max-width:620px;margin:0}
+.hero-index{display:flex;align-items:center;gap:13px;padding:0 2px 4px 20px;white-space:nowrap}.hero-index div{display:grid;gap:5px}.hero-index strong{font:20px Georgia,serif;color:#d9bd81}.hero-index span{font:9px Arial,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#d1e0d5}.hero-index i{width:30px;height:1px;background:#7e9d89;display:block;margin-top:-16px}
+main{max-width:1320px;width:calc(100% - 64px);margin:-23px auto 0;padding-bottom:40px;z-index:1}
+.panel{border:1px solid #d9e3db;border-radius:7px;background:#fff;padding:25px 27px 23px;box-shadow:0 13px 34px #193d2c0d}
+.search-panel-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:17px}.kicker{font:700 9px Arial,sans-serif;color:#4a7059;letter-spacing:.15em}.panel h2{font:500 23px/1.2 Georgia,"Iowan Old Style",serif;color:#203c2e;letter-spacing:-.02em;margin:7px 0 0}
+.search-shortcut{display:flex;align-items:center;gap:8px;color:#7b8a80;font:10px Arial,sans-serif}.search-shortcut kbd{display:grid;place-items:center;width:24px;height:24px;border:1px solid #d6e0d8;border-bottom-width:2px;border-radius:4px;background:#f7f9f7;color:#395844;font:700 12px Arial,sans-serif}
+.formgrid{grid-template-columns:minmax(0,1fr) minmax(220px,265px) auto;gap:12px}.field label{font:700 9px Arial,sans-serif;color:#65776c;letter-spacing:.09em;margin-bottom:7px}.searchbox{height:51px;border:1px solid #c8d5cc;border-radius:5px;background:#fbfcfb;padding:0 14px}.searchbox:focus-within{border-color:#4d8061;box-shadow:0 0 0 3px #4d806115}.searchbox svg{color:#527261;width:19px;height:19px}.searchbox input{font:13px Arial,sans-serif;color:#23382c}.searchbox input::placeholder{color:#9aa79e}.clear-search-btn{border:1px solid #dce5de;border-radius:4px;background:#f2f6f2;color:#44614f;min-width:55px;height:29px;font:700 10px Arial,sans-serif}.field select{height:51px;border:1px solid #c8d5cc;border-radius:5px;background:#fbfcfb;color:#304c3a;font:12px Arial,sans-serif;padding:0 12px}.grid-action .btn{height:51px;min-width:175px;border-radius:5px;background:#255b42;color:white;font:700 11px Arial,sans-serif;letter-spacing:.01em;padding:0 18px;box-shadow:0 2px 5px #173f321c}.grid-action .btn:hover{background:#194832;transform:translateY(-1px)}.btn:focus-visible,.toolbtn:focus-visible,.iconbtn:focus-visible,.mobile-nav-btn:focus-visible{outline:3px solid #c38a32;outline-offset:3px}
+.searchopts{margin-top:14px;padding-top:14px;border-top:1px solid #edf1ed}.optlabel{font:700 9px Arial,sans-serif;color:#728176;letter-spacing:.1em;margin-right:4px}.modeseg{gap:5px}.modeseg label span{font:600 10px Arial,sans-serif;border-radius:4px;border-color:#dce6de;background:#f7f9f7;color:#4b6554;padding:7px 10px}.modeseg label input:checked+span{background:#e8f1e9;border-color:#aac5b1;color:#1c4e34}.verifopt{font:600 10px Arial,sans-serif;color:#4d6554}.verifopt input{accent-color:#286346}
+.hint{font:10px/1.6 Arial,sans-serif;color:#859188}.hint-primary{display:flex;gap:8px;align-items:flex-start;color:#617267}.hint-icon{flex:none;display:grid;place-items:center;margin-top:1px;width:14px;height:14px;border:1px solid #bccdbf;border-radius:50%;font:700 9px Georgia,serif;color:#54735e}.panel .hint:last-child{padding-left:22px}
+.saved-panel{background:#f8faf8;border:1px solid #dce5de;border-radius:6px;padding:13px 17px;margin:14px 0 25px}.saved-head{align-items:center}.saved-title-wrap{display:flex;gap:10px;align-items:center}.saved-symbol{width:28px;height:28px;display:grid;place-items:center;background:#eaf2eb;border-radius:4px;color:#477354;font:12px Arial,sans-serif}.saved-head h2{font:600 13px Arial,sans-serif;color:#314b39}.saved-title-wrap p{font:10px Arial,sans-serif;color:#869188;margin:3px 0 0}.saved-head .toolbtn{border-radius:4px;font:600 10px Arial,sans-serif;padding:7px 10px}.saved-head #clearSavedBtn{background:transparent;color:#748176}
+.results-section{margin-top:6px}.resultshead{margin:0 0 12px;align-items:center}.results-title{display:flex;gap:12px;align-items:center}.results-rule{width:3px;height:31px;background:#b79453;display:block}.resultshead h2{font:500 23px Georgia,"Iowan Old Style",serif;color:#203c2e;letter-spacing:-.02em}.resultshead p{font:10px Arial,sans-serif;color:#7c8980;margin:4px 0 0}#status{font:10px/1.5 Arial,sans-serif;color:#607367;max-width:48%;background:#eaf1eb;border:1px solid #dce8de;border-radius:4px;padding:7px 10px;text-align:left}
+#results{gap:9px}.summary{background:#eef4ef;border-color:#d8e4da;border-radius:5px;padding:12px 15px}.summary-line{font:11px/1.6 Arial,sans-serif;color:#415b48}.summary-line strong{font-weight:700;color:#234f35}.groupchip{border-radius:4px;background:#fff;font:600 10px Arial,sans-serif}.result{border:1px solid #dce5de;border-radius:6px;padding:18px 20px;background:#fff;box-shadow:0 2px 8px #173f3206}.rhead{align-items:flex-start}.result h3{font:600 16px/1.45 Georgia,"Iowan Old Style",serif;color:#204a32}.rnum{border-radius:3px;background:#f2f5f2;border-color:#e1e8e2;color:#66786a;font:700 9px Arial,sans-serif;letter-spacing:.07em}.rheadright{gap:6px}.iconbtn,.bookmark-btn{border-radius:4px;min-height:31px;font:600 10px Arial,sans-serif}.iconbtn{color:#42614d;border-color:#dfe7e0}.iconbtn.pdf{color:#84453d}.meta{font:10px/1.7 Arial,sans-serif;color:#77847b;margin:7px 0 12px}.meta strong{color:#455f4d}.badge{border-radius:3px;font:700 9px Arial,sans-serif;letter-spacing:0}.badge.rel{background:#edf2f7;color:#425d78;border-color:#dce5ee}.badge.ok{background:#e9f3ec;color:#326246;border-color:#c9dfce}.badge.pend{background:#fbf3e1;color:#87672d;border-color:#eadcb6}.badge.page{background:#f1f4f2;color:#5e7063;border-color:#e1e7e2}.snippet{font:12px/1.78 Arial,sans-serif;color:#34473a;max-width:86ch}.article-heading,.result h3{color:#1d4b32}.source{font:600 10px Arial,sans-serif;color:#286247}.toolbtn{border-radius:4px;font:600 10px Arial,sans-serif}.more{font:600 10px Arial,sans-serif;color:#286247}.loadmore .btn{background:#fff;color:#255b42;border:1px solid #b7cbbd;border-radius:4px}
+.empty{border:1px dashed #c9d8cd;border-radius:6px;background:#fbfcfb;padding:34px 20px}.empty strong{font:500 18px Georgia,serif;color:#314b39}.empty span{font:11px/1.6 Arial,sans-serif;color:#7b8980}
+.notice{display:flex;gap:11px;align-items:flex-start;background:#f8f4e9;border:1px solid #e8dec1;border-radius:5px;color:#705d31;padding:13px 15px;margin-top:24px;font:11px/1.65 Arial,sans-serif}.notice-mark{flex:none;width:19px;height:19px;border:1px solid #c6ae77;border-radius:50%;display:grid;place-items:center;font:700 11px Georgia,serif;color:#8a713a}.notice strong{font:700 10px Arial,sans-serif;letter-spacing:.04em}.notice p{margin:3px 0 0;color:#796c4d}
+footer{max-width:1320px;width:calc(100% - 64px);border-top:1px solid #d8e2da;padding:17px 0 24px;align-items:center;font:10px/1.6 Arial,sans-serif;color:#7d8980}.footer-brand{display:flex;align-items:center;gap:10px}.footer-brand strong{color:#405a48}.footer-mark{width:28px;height:28px;display:grid;place-items:center;background:#1b493b;color:#fff;border-radius:4px;font:500 17px Georgia,serif}.footer-note{text-align:right}.footer-note span{color:#9aa59d;font-size:9px}
+@media(max-width:900px){.topin,.heroin,main,footer{width:calc(100% - 36px)}.hero-index{gap:8px}.hero-index i{width:18px}.formgrid{grid-template-columns:minmax(0,1fr) minmax(190px,230px)}.grid-action{grid-column:1/-1}.grid-action .btn{min-width:180px}.snippet{max-width:100%}}
+@media(max-width:600px){.topin,.heroin,main,footer{width:calc(100% - 24px)}.topin{min-height:59px}.brand-mark{width:34px;height:34px}.brand{font-size:12px}.subbrand{font-size:7px}.top-meta-note{display:none}.toplabel{font-size:9px;padding:6px 8px}.heroin{padding:21px 0 33px}.hero-content{display:block}.hero h1{font-size:29px;margin:10px 0 8px}.hero p{font-size:11px;max-width:94%;line-height:1.65}.hero-index{display:none}main{margin-top:-15px;padding-bottom:23px}.panel{padding:15px 13px;border-radius:6px}.search-panel-head{margin-bottom:14px}.panel h2{font-size:19px}.search-shortcut{font-size:0}.search-shortcut kbd{font-size:12px}.formgrid{grid-template-columns:minmax(0,1fr);gap:9px}.formgrid>.field:first-child,.formgrid>.field:nth-child(2),.grid-action{grid-column:1;grid-row:auto}.searchbox{height:46px}.field select{height:46px}.grid-action .btn{width:100%;height:46px}.searchopts{align-items:flex-start;gap:9px;flex-direction:column}.modeseg{gap:4px}.optlabel{width:auto;margin-right:3px}.modeseg label span{font-size:9px;padding:7px 8px}.verifopt{font-size:10px}.panel .hint:last-child{padding-left:0}.hint{font-size:9px}.saved-panel{padding:11px;margin:11px 0 19px}.saved-head{align-items:flex-start}.saved-head h2{font-size:12px}.saved-title-wrap p{font-size:9px}.saved-head .toolbtn{font-size:9px;padding:7px 8px}.saved-symbol{width:25px;height:25px}.resultshead{margin:0 0 9px;flex-direction:column;align-items:flex-start}.resultshead h2{font-size:21px}.resultshead p,#status{font-size:9px}.results-title{gap:9px}#status{max-width:100%;padding:6px 8px}.result{padding:13px 12px}.rhead{flex-direction:column;gap:8px}.rheadright{width:100%;justify-content:flex-start}.result h3{font-size:15px}.iconbtn,.bookmark-btn{min-height:30px;padding:5px 7px;font-size:9px}.meta{font-size:9px}.snippet{font-size:11px;line-height:1.7}.notice{font-size:9px;padding:10px;margin-top:16px}.notice strong{font-size:9px}.footer-brand{align-items:flex-start}.footer-note{text-align:left;font-size:9px}footer{padding:13px 0 18px;gap:8px}.footer-note span{font-size:8px}.mobile-bottom-nav{background:#fff;border-top:1px solid #dce5de;box-shadow:0 -4px 16px #173f320e;backdrop-filter:none}.mobile-nav-btn{border-radius:5px;font:600 9px Arial,sans-serif}.mobile-nav-btn.active{background:#eaf2eb;color:#1d4b32}.mobile-more-panel{border-radius:6px;box-shadow:0 12px 30px #173f3220}.mobile-more-panel button{border-radius:4px}}
+@media(min-width:601px) and (max-width:900px){.hero-index{display:none}.hero-content{align-items:flex-start}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+::selection{background:#d7e7d9;color:#163e2b}input::selection{background:#d7e7d9;color:#163e2b}*{scrollbar-color:#b9cabe #edf2ee;scrollbar-width:thin}::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:#edf2ee}::-webkit-scrollbar-thumb{background:#b9cabe;border:2px solid #edf2ee;border-radius:8px}
+
 </style>
 </head>
 <body>
 <header class="top">
 <div class="topin">
 <div class="brand-wrap"><span class="brand-mark"><svg viewBox="0 0 64 64" aria-hidden="true"><rect width="64" height="64" rx="12" fill="#14392F"/><path d="M15 9h23l11 11v15M38 9v12h11M20 18h13M20 24h11M20 30h8M12 52V12a3 3 0 0 1 3-3h23l11 11v15M12 52h12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M25 39 40 31 55 39v2H25zM29 43h22M31 43v9m7-9v9m7-9v9M27 54h25M24 58h31" fill="none" stroke="#fff" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="brand">Consultor Normativo Ecuador</div><div class="subbrand">Legislación · Normativa técnica · Obras públicas</div></div></div>
-<div class="toplabel">Consulta documental</div>
+<div class="top-meta"><span class="toplabel">Consulta documental</span><span class="top-meta-note">Ecuador · Repositorio jurídico y técnico</span></div>
 </div>
 </header>
 <section class="hero">
 <div class="heroin">
-<div class="eyebrow">Repositorio jurídico y técnico</div>
+<div class="hero-content"><div class="hero-copy"><div class="eyebrow"><span class="eyebrow-mark" aria-hidden="true"></span> REPOSITORIO JURÍDICO Y TÉCNICO</div>
 <h1>Consulta normativa</h1>
-<p>Busca dentro de los documentos indexados y limita los resultados a una categoría o fuente concreta.</p>
+<p>Localiza disposiciones, artículos y criterios técnicos dentro de las fuentes documentales indexadas.</p></div><div class="hero-index" aria-label="Capacidades de consulta"><div><strong>01</strong><span>Localizar</span></div><i></i><div><strong>02</strong><span>Contrastar</span></div><i></i><div><strong>03</strong><span>Verificar</span></div></div></div>
 </div>
 </section>
 <main>
 <section class="panel">
-<div class="kicker">Buscador documental</div>
-<h2>¿Qué necesitas consultar?</h2>
+<div class="search-panel-head"><div><div class="kicker">ESPACIO DE CONSULTA</div>
+<h2>¿Qué necesitas consultar?</h2></div><div class="search-shortcut"><kbd>/</kbd><span>Enfocar búsqueda</span></div></div>
 <form id="searchForm">
 <div class="formgrid">
 <div class="field">
 <label for="question">Palabras clave, artículo o tema</label>
 <div class="searchbox">
 <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4.3 4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-<input id="question" type="search" required aria-label="Palabras clave, artículo o tema" placeholder="Ej.: artículo 32, NEC sismorresistente, jornada laboral…" autocomplete="off">
+<input id="question" type="search" required aria-label="Palabras clave, artículo o tema" placeholder="Ej.: art. 365 RGLOSNCP, recepción provisional, NEC…" autocomplete="off">
 <button type="button" id="clearSearchBtn" class="clear-search-btn" aria-label="Limpiar campo de búsqueda" title="Borrar el texto de búsqueda">Limpiar</button>
 </div>
 </div>
@@ -262,12 +296,12 @@ mark{background:#fff1b8;color:inherit;border-radius:3px;padding:0 2px}.snippet.c
 </div>
 <div class="catmsg" id="catalogMessage" hidden></div>
 <details class="excluded" id="excludedBox" hidden><summary id="excludedSummary"></summary><ul id="excludedList"></ul></details>
-<div class="hint">Usa comillas para buscar una frase dentro de otras palabras: <em>"recepción provisional" obras</em>. Para un artículo concreto: <em>art. 365 RGLOSNCP</em>. Las palabras se comparan completas (incluye singular y plural).</div>
+<div class="hint hint-primary"><span class="hint-icon" aria-hidden="true">i</span><span>Usa comillas para buscar una frase dentro de otras palabras: <em>"recepción provisional" obras</em>. Para un artículo concreto: <em>art. 365 RGLOSNCP</em>. Las palabras se comparan completas (incluye singular y plural).</span></div>
 <div class="hint">El filtro se obtiene del catálogo de documentos indexados. Las categorías dependen de los nombres y carpetas reconocidos; revisa las asignaciones automáticas si una fuente aparece en una categoría incorrecta.</div>
 </section>
 <section class="saved-panel no-print" id="savedPanel">
 <div class="saved-head">
-<h2>Marcadores guardados <span id="savedCount">(0)</span></h2>
+<div class="saved-title-wrap"><span class="saved-symbol" aria-hidden="true">◆</span><div><h2>Marcadores guardados <span id="savedCount">(0)</span></h2><p>Consultas conservadas en este navegador</p></div></div>
 <div class="saved-item-actions">
 <button type="button" class="toolbtn" id="toggleSavedBtn">Mostrar marcadores</button>
 <button type="button" class="toolbtn" id="clearSavedBtn">Borrar todos</button>
@@ -278,16 +312,16 @@ mark{background:#fff1b8;color:inherit;border-radius:3px;padding:0 2px}.snippet.c
 </div>
 <div class="hint">Los marcadores se guardan en este navegador y dispositivo. No se sincronizan automáticamente con otros equipos.</div>
 </section>
-<section>
+<section class="results-section">
 <div class="resultshead">
-<div><h2>Resultados</h2><p id="resultDescription">Texto recuperado del índice documental.</p></div>
+<div class="results-title"><span class="results-rule"></span><div><h2>Resultados</h2><p id="resultDescription">Texto recuperado del índice documental.</p></div></div>
 <div id="status" role="status" aria-live="polite">Cargando catálogo documental…</div>
 </div>
 <div id="results"><div class="empty"><strong>Listo para consultar</strong><span>Escribe un tema y selecciona una fuente o categoría.</span></div></div>
 </section>
-<aside class="notice"><strong>Nota:</strong> los resultados reflejan coincidencias del índice y no certifican la vigencia jurídica. Verifica la publicación oficial y sus reformas antes de utilizar una disposición como fundamento.</aside>
+<aside class="notice"><span class="notice-mark" aria-hidden="true">!</span><div><strong>Nota sobre vigencia normativa</strong><p>Los resultados reflejan coincidencias del índice y no certifican la vigencia jurídica. Verifica la publicación oficial y sus reformas antes de utilizar una disposición como fundamento.</p></div></aside>
 </main>
-<footer><div><strong>Consultor Normativo Ecuador</strong><br>Repositorio de consulta jurídica y técnica.</div><div>Las fuentes deben estar indexadas para aparecer en las búsquedas.</div></footer>
+<footer><div class="footer-brand"><span class="footer-mark" aria-hidden="true">C</span><div><strong>Consultor Normativo Ecuador</strong><br>Repositorio de consulta jurídica y técnica.</div></div><div class="footer-note">Las fuentes deben estar indexadas para aparecer en las búsquedas.<br><span>La verificación jurídica corresponde al usuario antes de citar o aplicar una disposición.</span></div></footer>
 
 <div class="mobile-more-panel" id="mobileMorePanel" aria-hidden="true">
   <strong>Acciones rápidas</strong>
@@ -313,6 +347,16 @@ mark{background:#fff1b8;color:inherit;border-radius:3px;padding:0 2px}.snippet.c
 const form = document.getElementById('searchForm');
 const input = document.getElementById('question');
 const clearSearchBtn = document.getElementById('clearSearchBtn');
+
+// Atajo de teclado para enfocar la consulta, sin interferir con campos editables.
+document.addEventListener('keydown', function(event) {
+  if (event.key !== '/' || event.ctrlKey || event.metaKey || event.altKey) return;
+  const target = event.target;
+  if (target && (target.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName))) return;
+  event.preventDefault();
+  input.focus();
+});
+
 clearSearchBtn.addEventListener('click', function() {
   input.value = '';
   input.focus();
