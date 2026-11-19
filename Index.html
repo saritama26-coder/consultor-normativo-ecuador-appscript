@@ -1280,6 +1280,9 @@ RE_REMISION.lastIndex = 0;
 const frag = document.createDocumentFragment();
 let last = 0, m;
 while ((m = RE_REMISION.exec(t)) !== null) {
+const despues = t.slice(m.index + m[0].length);
+// "Art. 81.-" es el encabezado de un artículo, no una remisión: se deja como texto.
+if (/^\s*\.?\s*[-–—]/.test(despues)) continue;
 if (m.index > last) frag.appendChild(document.createTextNode(t.slice(last, m.index)));
 const otra = t.slice(m.index + m[0].length).match(RE_OTRA_NORMA);
 const btn = document.createElement('button');
