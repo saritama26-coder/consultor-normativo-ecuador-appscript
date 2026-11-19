@@ -14,6 +14,10 @@ on:
 permissions:
   contents: read
 
+env:
+  # Implementación de la aplicación web (/exec) que se actualiza en cada sincronización.
+  DEPLOYMENT_ID: AKfycbxTRtWPCtDh2R2U9jOkFlEZ1oipsW8OWPx9iL0OuHxm0OeSAX7fsUUiTd3B9rEceiz9hw
+
 concurrency:
   group: apps-script-sync
   cancel-in-progress: false
@@ -76,4 +80,10 @@ jobs:
             if [ -f "$a" ] && diff -q --strip-trailing-cr "$a" "$b" >/dev/null; then echo "OK  $b"; else echo "NO COINCIDE  $b"; ok=0; fi
           done
           [ "$ok" = 1 ] || { echo "La sincronización no se aplicó por completo."; exit 1; }
-          echo "Recuerda: publica una versión nueva en Implementar > Gestionar implementaciones para actualizar la URL /exec."
+      - name: Publicar versión nueva en la aplicación web (/exec)
+        run: |
+          clasp list-deployments | tee "$RUNNER_TEMP/deps.txt"
+          grep -q "$DEPLOYMENT_ID" "$RUNNER_TEMP/deps.txt" || { echo "No existe la implementación $DEPLOYMENT_ID en el proyecto. No se publica."; exit 1; }
+          clasp create-deployment -i "$DEPLOYMENT_ID" -d "GitHub ${GITHUB_SHA::7}"
+          echo "Implementación después de publicar:"
+          clasp list-deployments | grep "$DEPLOYMENT_ID"

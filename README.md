@@ -19,7 +19,10 @@ Este repositorio está preparado para sincronizar los archivos del proyecto con 
 5. Ejecuta **Actions → Sincronizar Google Apps Script → Run workflow**. Revisa que termine en verde.
 6. Para futuras modificaciones, edita los archivos del repositorio y haz `commit`/`push` a `main`. El workflow subirá los archivos al proyecto de Apps Script.
 
-## Importante: el despliegue web no se actualiza automáticamente
+## Publicación de la aplicación web
+Desde el 19-11-2026 el workflow también publica una versión nueva en la implementación `/exec` configurada en `DEPLOYMENT_ID` (`.github/workflows/sync-apps-script.yml`). El texto siguiente queda como referencia para hacerlo a mano.
+
+### Antes: el despliegue web no se actualizaba automáticamente
 `clasp push` sincroniza los archivos del editor, pero no publica una nueva versión de la implementación `/exec`. Después de sincronizar cambios, entra a Apps Script → **Implementar → Gestionar implementaciones → Editar** (icono de lápiz) → **Versión nueva** → **Implementar**. La URL puede mantenerse igual si editas la implementación existente.
 
 ## Seguridad y preservación de datos
