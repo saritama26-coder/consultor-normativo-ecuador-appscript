@@ -31,17 +31,11 @@ jobs:
       - name: Comparar con el repositorio
         run: |
           R="$RUNNER_TEMP/remoto"
-          for f in "$R"/*; do
-            b=$(basename "$f")
-            if [ -f "$b" ]; then
-              if diff -q --strip-trailing-cr "$f" "$b" >/dev/null; then echo "IGUAL      $b"
-              else echo "DIFERENTE  $b  ($(diff --strip-trailing-cr "$f" "$b" | grep -c '^[<>]') líneas distintas)"; fi
-            else echo "SOLO EN APPS SCRIPT  $b"; fi
+          for par in "Código.js:Codigo.gs" "Clasificador.js:Clasificador.gs" "Index.html:Index.html"; do
+            a="$R/${par%%:*}"; b="${par##*:}"
+            echo "=================== ${par%%:*} (Apps Script)  vs  $b (repo): $(diff --strip-trailing-cr "$a" "$b" | grep -c '^[<>]') líneas distintas"
+            diff --strip-trailing-cr "$a" "$b" | cut -c1-220 | head -80 || true
           done
-          for b in Codigo.gs Index.html Clasificador.gs appsscript.json; do [ -f "$R/$b" ] || echo "SOLO EN REPO  $b"; done
-          echo "--- Manifiesto en Apps Script:"; cat "$R/appsscript.json"
-          echo "--- Diferencias resumidas de Codigo.gs (primeras 60 líneas):"
-          diff --strip-trailing-cr "$R/Codigo.gs" Codigo.gs | head -60 || true
       - name: Guardar respaldo del proyecto de Apps Script
         uses: actions/upload-artifact@v4
         with:
