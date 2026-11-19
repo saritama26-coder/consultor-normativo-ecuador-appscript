@@ -44,3 +44,11 @@ El paquete prepara los archivos y el flujo de sincronización. No crea el reposi
 - Documentos sin texto: se listan en la interfaz y en cada búsqueda. Para revisarlos: ejecutar `diagnosticarDocumentosSinTexto()` y luego `reintentarErrores()`; el OCR ahora reintenta por tramos más pequeños (mínimo `OCR_MIN_PAGINAS`).
 - Verificación de fuentes: columna H «Verificación» de la hoja Documentos (ejecutar `prepararColumnaVerificacion()` una vez). Escribir «Verificado» (más fecha o nota) en las fuentes cotejadas con la publicación oficial. Filtro «Solo fuentes verificadas» en la interfaz.
 - Corregido: el botón «Copiar texto» no tenía acción y «Exportar resultados a PDF» ocultaba todas las tarjetas al imprimir.
+
+## Cambios del 19-11-2026 (sincronización)
+
+- Hasta esta fecha, `clasp push` terminaba en verde pero no subía nada ("Skipping push.") porque el manifiesto del repositorio no coincidía con el de Apps Script.
+- `appsscript.json` ahora incluye la configuración `webapp` vigente en Apps Script (ejecutar como el usuario que implementa; acceso: cualquier persona).
+- El workflow fija `@google/clasp@3.4.1`, descarga y valida el proyecto antes de subir (se detiene si hay archivos desconocidos o si el manifiesto difiere), guarda un respaldo de 90 días como artefacto, sube con `--force` y comprueba al final que Apps Script quedó igual al repositorio.
+- `.claspignore` limita la subida a `Codigo.gs`, `Clasificador.gs`, `Index.html` y `appsscript.json`. El `index.html` en minúsculas (portada con iframe) y los íconos no se suben a Apps Script.
+- En Apps Script, el archivo `Código` pasa a llamarse `Codigo` (mismo contenido).

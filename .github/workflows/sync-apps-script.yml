@@ -7,8 +7,16 @@ on:
       - 'Index.html'
       - 'Clasificador.gs'
       - 'appsscript.json'
+      - '.claspignore'
       - '.github/workflows/sync-apps-script.yml'
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apps-script-sync
+  cancel-in-progress: false
 
 jobs:
   sync:
@@ -19,22 +27,53 @@ jobs:
       - name: Configurar Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: Instalar clasp
-        run: npm install -g @google/clasp
+          node-version: '22'
+      - name: Instalar clasp (versión fija)
+        run: npm install -g @google/clasp@3.4.1
       - name: Configurar autenticación de clasp
         env:
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
           CLASP_JSON: ${{ secrets.CLASP_JSON }}
         run: |
-          test -n "$CLASPRC_JSON" || (echo "Falta el secreto CLASPRC_JSON" && exit 1)
-          test -n "$CLASP_JSON" || (echo "Falta el secreto CLASP_JSON" && exit 1)
+          test -n "$CLASPRC_JSON" || { echo "Falta el secreto CLASPRC_JSON"; exit 1; }
+          test -n "$CLASP_JSON" || { echo "Falta el secreto CLASP_JSON"; exit 1; }
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
-          printf '%s' "$CLASP_JSON" > .clasp.json
-      - name: Validar proyecto
+          node -e 'const c=JSON.parse(process.env.CLASP_JSON);if(!c.scriptId)process.exit(1);process.stdout.write(JSON.stringify({scriptId:c.scriptId,rootDir:"."}))' > .clasp.json
+          cp .clasp.json "$RUNNER_TEMP/clasp.json"
+      - name: Descargar y validar el proyecto actual de Apps Script
         run: |
-          test -f Codigo.gs
-          test -f Index.html
-          test -f appsscript.json
+          mkdir -p "$RUNNER_TEMP/antes" && cp "$RUNNER_TEMP/clasp.json" "$RUNNER_TEMP/antes/.clasp.json"
+          (cd "$RUNNER_TEMP/antes" && clasp pull)
+          # Solo se aceptan los archivos conocidos; cualquier otro se perdería al sobrescribir.
+          for f in "$RUNNER_TEMP/antes"/*; do
+            case "$(basename "$f")" in
+              appsscript.json|Codigo.js|Código.js|Clasificador.js|Index.html) ;;
+              *) echo "Archivo inesperado en Apps Script: $(basename "$f"). No se sincroniza."; exit 1 ;;
+            esac
+          done
+          # El manifiesto del repositorio debe ser igual al de Apps Script (incluye el acceso de la web app).
+          node -e '
+            const fs=require("fs");
+            const sort=v=>Array.isArray(v)?v.map(sort):(v&&typeof v==="object")?Object.keys(v).sort().reduce((a,k)=>(a[k]=sort(v[k]),a),{}):v;
+            const a=sort(JSON.parse(fs.readFileSync(process.argv[1]))), b=sort(JSON.parse(fs.readFileSync("appsscript.json")));
+            if(JSON.stringify(a)!==JSON.stringify(b)){console.log("El manifiesto de Apps Script difiere del repositorio. Actualiza appsscript.json antes de sincronizar.");process.exit(1)}
+          ' "$RUNNER_TEMP/antes/appsscript.json"
+      - name: Respaldo previo a la sincronización
+        uses: actions/upload-artifact@v4
+        with:
+          name: respaldo-apps-script-${{ github.sha }}
+          path: ${{ runner.temp }}/antes/
+          retention-days: 90
       - name: Sincronizar archivos con Apps Script
-        run: clasp push
+        run: clasp push --force
+      - name: Verificar que la sincronización se aplicó
+        run: |
+          mkdir -p "$RUNNER_TEMP/despues" && cp "$RUNNER_TEMP/clasp.json" "$RUNNER_TEMP/despues/.clasp.json"
+          (cd "$RUNNER_TEMP/despues" && clasp pull)
+          ok=1
+          for par in "Codigo.js:Codigo.gs" "Clasificador.js:Clasificador.gs" "Index.html:Index.html"; do
+            a="$RUNNER_TEMP/despues/${par%%:*}"; b="${par##*:}"
+            if [ -f "$a" ] && diff -q --strip-trailing-cr "$a" "$b" >/dev/null; then echo "OK  $b"; else echo "NO COINCIDE  $b"; ok=0; fi
+          done
+          [ "$ok" = 1 ] || { echo "La sincronización no se aplicó por completo."; exit 1; }
+          echo "Recuerda: publica una versión nueva en Implementar > Gestionar implementaciones para actualizar la URL /exec."
