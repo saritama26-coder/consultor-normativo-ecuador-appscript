@@ -32,8 +32,7 @@
 const CONFIG = {
   SPREADSHEET_ID: '1d1ng1tSoSPBcvX6frybVbNZcQbuT-wsYrgrjA6Jp6Mc',
   FOLDER_IDS: [
-    '1tChmi3ToWPgpr4uf0nxCMmSYxeqr5EKR', // Leyes Vigentes (contiene subcarpetas)
-    '1lkSHboTzZGTtlKiy6NQMoUH7uQrLwVjr'  // NORMAS TECNICAS NEC
+    '1tChmi3ToWPgpr4uf0nxCMmSYxeqr5EKR'  // Leyes Vigentes (contiene subcarpetas)
   ],
   INCLUIR_SUBCARPETAS: true,
   SHEET_ARTICLES: 'Articulos',
@@ -65,7 +64,6 @@ const CATEGORIAS = [
   { id: 'CONTRATACION', nombre: 'Contratación pública — SERCOP' },
   { id: 'CONTROL', nombre: 'Control público — Contraloría' },
   { id: 'SERVICIO_PUBLICO', nombre: 'Administración pública y servicio público' },
-  { id: 'NEC', nombre: 'Construcción — NEC' },
   { id: 'URBANISMO', nombre: 'Urbanismo y ordenamiento territorial' },
   { id: 'DISCAPACIDAD', nombre: 'Accesibilidad y discapacidad' },
   { id: 'AMBIENTE_SEGURIDAD', nombre: 'Ambiente y seguridad ocupacional' },
@@ -543,7 +541,7 @@ function obtenerCatalogoFuentes() {
 
 /**
  * Consulta con filtro y opciones (versión 2026-10-15).
- * filtro: TODAS | ID de categoría (NEC, CONSTITUCION...) | DOC:<ID de Drive>
+ * filtro: TODAS | ID de categoría (CONSTITUCION, LEYES...) | DOC:<ID de Drive>
  * opciones: {
  *   modo: 'TODAS' (todas las palabras, por defecto) | 'FRASE' (frase exacta) | 'CUALQUIERA',
  *   offset: número de resultados ya mostrados (paginación),
@@ -740,7 +738,6 @@ const ALIAS_NORMAS_ = {
   losep: ['losep|servicio publico'],
   cogep: ['cogep|codigo organico general de procesos'],
   coa: ['codigo organico administrativo'],
-  nec: ['nec|norma ecuatoriana de la construccion'],
   loscca: ['contraloria'],
   locge: ['contraloria']
 };
@@ -1014,9 +1011,6 @@ function clasificarDocumento_(nombre, carpeta) {
   // Prioridad específica antes que general.
   if (/constitucion|reforma constitucional|enmienda constitucional/.test(n)) {
     return { id: 'CONSTITUCION', nombre: 'Constitución y normativa constitucional' };
-  }
-  if (/norma ecuatoriana de la construccion|\bnec\b|normas tecnicas nec|capitulo nec/.test(n)) {
-    return { id: 'NEC', nombre: 'Construcción — NEC' };
   }
   if (/sercop|losncp|contratacion publica|compras publicas/.test(n)) {
     return { id: 'CONTRATACION', nombre: 'Contratación pública — SERCOP' };
