@@ -245,6 +245,34 @@ footer{max-width:1320px;width:calc(100% - 64px);border-top:1px solid #d8e2da;pad
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 ::selection{background:#d7e7d9;color:#163e2b}input::selection{background:#d7e7d9;color:#163e2b}*{scrollbar-color:#b9cabe #edf2ee;scrollbar-width:thin}::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-track{background:#edf2ee}::-webkit-scrollbar-thumb{background:#b9cabe;border:2px solid #edf2ee;border-radius:8px}
 
+
+/* ===== Más opciones y aviso sin texto (2026-11-19) ===== */
+.formgrid{grid-template-columns:minmax(0,1fr) auto!important;gap:12px}
+.formgrid .grid-action{grid-column:auto!important;grid-row:auto!important}
+.searchopts{display:flex!important;flex-direction:row!important;align-items:center!important;justify-content:flex-start!important;flex-wrap:wrap;gap:10px 22px!important}
+.more-opts{flex:0 1 auto;order:0}
+.more-opts[open]{flex-basis:100%}
+.more-opts>summary{list-style:none;display:inline-flex;align-items:center;gap:8px;min-height:40px;cursor:pointer;font:700 13px Arial,sans-serif;color:#1d4a37}
+.more-opts>summary::-webkit-details-marker{display:none}
+.more-opts>summary::before{content:"";width:7px;height:7px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(45deg);margin:0 4px 3px 2px;transition:transform .15s}
+.more-opts[open]>summary::before{transform:rotate(225deg);margin-bottom:-3px}
+.more-opts-label{text-decoration:underline;text-underline-offset:4px;text-decoration-color:#9fb8a7}
+.more-opts[open] .more-opts-label{font-size:0}.more-opts[open] .more-opts-label::after{content:"Menos opciones";font-size:13px}
+.opts-badge{background:#b79453;color:#14281f;border-radius:99px;padding:2px 9px;font-size:11px;font-weight:700;text-decoration:none}
+.more-opts-body{display:grid;grid-template-columns:minmax(0,340px) auto;gap:14px 20px;align-items:end;padding:10px 0 4px}
+.verifopt{order:1;font:600 13px Arial,sans-serif!important;color:#2f4f3f!important;min-height:40px}
+.verifopt input{width:18px;height:18px}
+.link-btn{border:0;background:none;padding:0;font:inherit;color:#1d4a37;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.excluded{font-size:13px!important}
+.excluded li{margin:2px 0}
+.excluded li.excluded-help{list-style:none;margin:8px 0 0 -18px;color:#6b5420}
+@media(max-width:600px){
+.formgrid{grid-template-columns:minmax(0,1fr)!important}
+.more-opts-body{grid-template-columns:1fr}
+.modeseg{display:grid!important;grid-template-columns:repeat(3,1fr)}
+.modeseg .optlabel{grid-column:1/-1}
+.modeseg label span{display:block;text-align:center;font-size:12px!important;padding:9px 6px!important}
+}
 </style>
 </head>
 <body>
@@ -275,19 +303,24 @@ footer{max-width:1320px;width:calc(100% - 64px);border-top:1px solid #d8e2da;pad
 <button type="button" id="clearSearchBtn" class="clear-search-btn" aria-label="Limpiar campo de búsqueda" title="Borrar el texto de búsqueda">Limpiar</button>
 </div>
 </div>
+<div class="actions grid-action"><button class="btn" id="submitBtn" type="submit"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4.3 4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="submitLabel">Consultar documentos</span></button></div>
+</div>
+<div class="searchopts">
+<details class="more-opts" id="masOpciones">
+<summary><span class="more-opts-label">Más opciones</span> <span class="opts-badge" id="optsBadge" hidden></span></summary>
+<div class="more-opts-body">
 <div class="field">
 <label for="sourceFilter">Limitar búsqueda a</label>
 <select id="sourceFilter"><option value="TODAS">Cargando fuentes indexadas…</option></select>
 </div>
-<div class="actions grid-action"><button class="btn" id="submitBtn" type="submit"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 4.3 4.3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span id="submitLabel">Consultar documentos</span></button></div>
-</div>
-<div class="searchopts">
 <div class="modeseg" role="radiogroup" aria-label="Tipo de coincidencia">
 <span class="optlabel">Coincidencia</span>
 <label><input type="radio" name="modo" value="TODAS" checked><span>Todas las palabras</span></label>
 <label><input type="radio" name="modo" value="FRASE"><span>Frase exacta</span></label>
 <label><input type="radio" name="modo" value="CUALQUIERA"><span>Cualquier palabra</span></label>
 </div>
+</div>
+</details>
 <label class="verifopt"><input type="checkbox" id="soloVerificadas"><span>Solo fuentes verificadas</span></label>
 </div>
 </form>
@@ -443,13 +476,16 @@ const summary = document.getElementById('excludedSummary');
 const ul = document.getElementById('excludedList');
 ul.replaceChildren();
 if (!list.length) { box.hidden = true; return; }
-summary.textContent = list.length + ' documento(s) no participan en la búsqueda porque no tienen texto disponible (ver cuáles)';
+summary.textContent = (list.length === 1 ? '1 documento no aparece' : list.length + ' documentos no aparecen') + ' en las búsquedas porque no tiene' + (list.length === 1 ? '' : 'n') + ' texto legible (ver cuáles)';
 list.forEach(function(d) {
 const li = document.createElement('li');
 li.appendChild(document.createTextNode(d.nombre + ' '));
-const st = document.createElement('span'); st.textContent = '— ' + (d.estado || 'sin estado');
+const st = document.createElement('span'); st.textContent = '· ' + (d.estado || 'sin estado');
 li.appendChild(st); ul.appendChild(li);
 });
+const ayuda = document.createElement('li'); ayuda.className = 'excluded-help';
+ayuda.textContent = 'Suele ser un PDF escaneado. Para leerlo, ejecuta reintentarErrores en Apps Script.';
+ul.appendChild(ayuda);
 box.hidden = false;
 }
 function renderQuickChips(cats) {
@@ -482,6 +518,24 @@ sourceFilter.value = exists ? value : 'TODAS';
 function limpiarNombre(nombre) {
 return String(nombre || '').replace(/\.pdf$/i, '').replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim();
 }
+function describirFuente() {
+const filtro = lastSearch ? lastSearch.filtro : (sourceFilter.value || 'TODAS');
+resultDescription.textContent = 'Fuente seleccionada: ' + selectedFilterText() + '.';
+if (filtro !== 'TODAS') {
+const todas = document.createElement('button');
+todas.type = 'button'; todas.className = 'link-btn';
+todas.textContent = 'Buscar en todas';
+todas.addEventListener('click', function() { setFilter('TODAS'); actualizarOpciones(); if (input.value.trim()) submitForm(); });
+resultDescription.append(' ', todas);
+}
+}
+function actualizarOpciones() {
+const badge = document.getElementById('optsBadge');
+const det = document.getElementById('masOpciones');
+const activos = ((sourceFilter.value || 'TODAS') !== 'TODAS' ? 1 : 0) + (selectedMode() !== 'TODAS' ? 1 : 0);
+badge.textContent = activos + (activos === 1 ? ' activo' : ' activos');
+badge.hidden = !activos || det.open;
+}
 function selectedFilterText() {
 const o = sourceFilter.options[sourceFilter.selectedIndex];
 return o ? o.text : 'Todas las fuentes';
@@ -493,6 +547,10 @@ else form.dispatchEvent(new Event('submit', { cancelable: true }));
 function errorText(error) {
 return error && error.message ? error.message : String(error);
 }
+/* ---------- Más opciones ---------- */
+sourceFilter.addEventListener('change', actualizarOpciones);
+form.querySelectorAll('input[name="modo"]').forEach(function(r) { r.addEventListener('change', actualizarOpciones); });
+document.getElementById('masOpciones').addEventListener('toggle', actualizarOpciones);
 /* ---------- Consulta ---------- */
 const PAGE_SIZE = 30;
 let lastSearch = null;   // { query, filtro, opciones }
@@ -630,7 +688,7 @@ shownCount = offset + items.length;
 status.textContent = totalCoinc > shownCount
 ? 'Se muestran ' + shownCount + ' de ' + totalCoinc + ' coincidencias.'
 : 'Se encontraron ' + totalCoinc + ' resultado(s).';
-if (!append) resultDescription.textContent = 'Fuente seleccionada: ' + selectedFilterText();
+if (!append) describirFuente();
 if (!items.length && !append) {
 if (Array.isArray(data.porDocumento)) results.appendChild(renderSummary(data, 0));
 const box = document.createElement('div'); box.className = 'empty';
