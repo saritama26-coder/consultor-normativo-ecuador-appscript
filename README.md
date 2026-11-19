@@ -52,3 +52,11 @@ El paquete prepara los archivos y el flujo de sincronización. No crea el reposi
 - El workflow fija `@google/clasp@3.4.1`, descarga y valida el proyecto antes de subir (se detiene si hay archivos desconocidos o si el manifiesto difiere), guarda un respaldo de 90 días como artefacto, sube con `--force` y comprueba al final que Apps Script quedó igual al repositorio.
 - `.claspignore` limita la subida a `Codigo.gs`, `Clasificador.gs`, `Index.html` y `appsscript.json`. El `index.html` en minúsculas (portada con iframe) y los íconos no se suben a Apps Script.
 - En Apps Script, el archivo `Código` pasa a llamarse `Codigo` (mismo contenido).
+
+## Cambios del 19-11-2026 (seguridad, actualización de leyes, cita y remisiones)
+
+- **Seguridad:** la aplicación web es pública y se ejecuta con la cuenta del propietario; cualquier función sin "_" al final podía llamarse desde el navegador. Las funciones de administración (`configurarSistema`, `indexarDocumentosDrive`, `reindexarTodo`, `reintentarErrores`, `actualizarIndice`, `clasificarLeyesVigentes`, diagnósticos, etc.) ahora solo funcionan si las ejecuta el propietario desde el editor. `continuarIndexacion` solo actúa si hay una continuación pendiente. La búsqueda no cambia.
+- **`actualizarIndice()`** (ejecutar desde el editor): quita del índice las leyes retiradas de las carpetas o enviadas a la papelera, reindexa las que se modificaron en Drive después de su indexación y agrega las nuevas. Flujo para una ley reformada: reemplazar el archivo en Drive (Administrar versiones, o subir el nuevo y retirar el anterior) y ejecutar `actualizarIndice()`. La columna H «Verificación» de una ley reindexada queda vacía: la nueva versión debe cotejarse otra vez.
+- Los archivos en la papelera ya no se indexan.
+- **Copiar cita:** botón en cada resultado con el formato «Documento, Art. N, pág. N.» y, si existe, «Publicación: …». Para agregar la publicación: ejecutar `prepararHojaRegistroOficial()` una vez y completar la columna C de la hoja «Registro Oficial».
+- **Remisiones:** las menciones «artículo N» / «art. N» dentro del texto son enlaces. Si el texto indica otra norma («del Código…», «de la Ley…») se busca ese artículo en esa norma; si no, en el mismo documento.

@@ -53,6 +53,7 @@ function normalizarTextoClasificador_(texto) {
 }
 
 function clasificarLeyesVigentes() {
+  soloAdministrador_();
   const carpetaPrincipal = DriveApp.getFolderById(
     CONFIG_CLASIFICADOR.CARPETA_PRINCIPAL_ID
   );

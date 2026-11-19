@@ -273,6 +273,11 @@ footer{max-width:1320px;width:calc(100% - 64px);border-top:1px solid #d8e2da;pad
 .modeseg .optlabel{grid-column:1/-1}
 .modeseg label span{display:block;text-align:center;font-size:12px!important;padding:9px 6px!important}
 }
+
+/* ===== Remisiones y cita (2026-11-19) ===== */
+.remision{border:0;background:none;padding:0;font:inherit;color:#1d5a40;text-decoration:underline;text-decoration-style:dotted;text-underline-offset:3px;cursor:pointer}
+.remision:hover{text-decoration-style:solid;color:#0f3b29}
+@media print{.remision{color:inherit;text-decoration:none}}
 </style>
 </head>
 <body>
@@ -718,6 +723,10 @@ const citation = titleText + '\n' + (item.documento || '') + (item.pagina ? ' �
 copy.addEventListener('click', function() {
 copyText(citation + '\n\n' + limpiarPiesDePagina(item.extracto || item.texto || ''), copy, 'Texto copiado');
 });
+const cite = document.createElement('button'); cite.type = 'button'; cite.className = 'iconbtn';
+cite.title = 'Copiar la referencia para un informe u oficio'; cite.setAttribute('aria-label', 'Copiar cita');
+cite.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7h4v4c0 3-1.5 5-4 6M14 7h4v4c0 3-1.5 5-4 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Copiar cita</span>';
+cite.addEventListener('click', function() { copyText(citaFormal(item), cite, 'Cita copiada'); });
 const share = document.createElement('button');
 share.type = 'button'; share.className = 'iconbtn';
 share.title = 'Compartir resultado'; share.setAttribute('aria-label', 'Compartir resultado');
@@ -748,7 +757,7 @@ updateBookmarkButton(bookmark, item);
 updateBookmarkButton(bookmark, item);
 const num = document.createElement('span'); num.className = 'rnum';
 num.textContent = 'RESULTADO ' + String(index + 1).padStart(2, '0');
-right.append(copy, share, bookmark, num); head.append(title, right);
+right.append(copy, cite, share, bookmark, num); head.append(title, right);
 const meta = document.createElement('div'); meta.className = 'meta';
 const doc = document.createElement('strong'); doc.textContent = item.documento || 'Documento sin título';
 meta.appendChild(doc);
@@ -789,6 +798,7 @@ if (item.contextoNormativo) {
   card.append(head, meta);
 }
 appendFormattedText(text, extracto || fullText, highlighter);
+enlazarRemisiones(text, item);
 card.appendChild(text);
 const tools = document.createElement('div'); tools.className = 'rtools no-print';
 if (extracto && extracto !== fullText) {
@@ -799,6 +809,7 @@ full.addEventListener('click', function() {
 completo = !completo;
 text.replaceChildren();
 appendFormattedText(text, completo ? fullText : extracto, highlighter);
+enlazarRemisiones(text, item);
 text.classList.remove('collapsed');
 full.textContent = completo ? 'Ver solo el artículo coincidente' : 'Ver fragmento completo';
 if (completo) { const mk = text.querySelector('mark'); if (mk) mk.scrollIntoView({ block: 'center', behavior: 'smooth' }); }
@@ -1221,7 +1232,7 @@ function appendFormattedText(container, textValue, highlighter) {
   }
 }
 function appendHighlighted(container, textValue, re) {
-if (!re) { container.textContent = textValue; return; }
+if (!re) { container.appendChild(document.createTextNode(textValue)); return; }
 let last = 0;
 let m;
 re.lastIndex = 0;
@@ -1233,6 +1244,71 @@ container.appendChild(mark);
 last = m.index + m[0].length;
 }
 if (last < textValue.length) container.appendChild(document.createTextNode(textValue.slice(last)));
+}
+/* ---------- Cita lista para informe ---------- */
+function citaFormal(item) {
+const doc = limpiarNombre(item.documento || 'Documento sin título');
+let art = item.articuloCoincidente || item.articulo || '';
+if (/^Fragmento\b/i.test(art)) art = '';
+art = art.replace(/^Art[íi]culo\s+/i, 'Art. ');
+const m = String(item.pagina || '').match(/(\d+)/);
+const partes = [doc];
+if (art) partes.push(art);
+if (m) partes.push('pág. ' + m[1]);
+let cita = partes.join(', ') + '.';
+if (item.registroOficial) cita += ' Publicación: ' + item.registroOficial + '.';
+return cita;
+}
+/* ---------- Remisiones a otros artículos ---------- */
+const RE_REMISION = /\b(art[íi]culos?|arts?\.)\s*(\d+(?:\.\d+)?)/gi;
+const RE_OTRA_NORMA = /^\s*(?:[,;]\s*)?(?:(?:numeral|inciso|literal)[^,.;]{0,25}[,]?\s*)?(?:de\s+la|del|de)\s+(?!(?:esta|este|la\s+presente|el\s+presente|presente)\b)((?:Ley|C[óo]digo|Reglamento|Constituci[óo]n|Decreto|Acuerdo|Resoluci[óo]n|Norma|Ordenanza)\b[^,.;:()\n]{0,80})/i;
+function enlazarRemisiones(container, item) {
+const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+acceptNode: function(n) {
+return (n.parentElement && n.parentElement.closest('.article-heading, mark, button, a')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+}
+});
+const nodos = [];
+while (walker.nextNode()) nodos.push(walker.currentNode);
+nodos.forEach(function(nodo) {
+const t = nodo.nodeValue;
+RE_REMISION.lastIndex = 0;
+if (!RE_REMISION.test(t)) return;
+RE_REMISION.lastIndex = 0;
+const frag = document.createDocumentFragment();
+let last = 0, m;
+while ((m = RE_REMISION.exec(t)) !== null) {
+if (m.index > last) frag.appendChild(document.createTextNode(t.slice(last, m.index)));
+const otra = t.slice(m.index + m[0].length).match(RE_OTRA_NORMA);
+const btn = document.createElement('button');
+btn.type = 'button'; btn.className = 'remision';
+btn.textContent = m[0];
+const num = m[2];
+const ley = otra ? otra[1].trim() : '';
+btn.title = ley ? 'Buscar el art. ' + num + ' de ' + ley : 'Buscar el art. ' + num + ' en este documento';
+btn.addEventListener('click', function() { buscarRemision(num, ley, item); });
+frag.appendChild(btn);
+last = m.index + m[0].length;
+}
+if (last < t.length) frag.appendChild(document.createTextNode(t.slice(last)));
+nodo.parentNode.replaceChild(frag, nodo);
+});
+}
+function buscarRemision(num, ley, item) {
+if (ley) {
+setFilter('TODAS');
+input.value = 'art. ' + num + ' ' + ley;
+} else {
+const valor = 'DOC:' + (item.idFuente || '');
+let grupo = sourceFilter.querySelector('optgroup[data-remision]');
+if (!grupo) { grupo = document.createElement('optgroup'); grupo.label = 'Documento de la remisión'; grupo.dataset.remision = '1'; sourceFilter.appendChild(grupo); }
+grupo.replaceChildren();
+addOption(grupo, valor, 'Solo: ' + limpiarNombre(item.documento || 'este documento'));
+sourceFilter.value = valor;
+input.value = 'art. ' + num;
+}
+actualizarOpciones();
+submitForm();
 }
 /* ---------- Copia de texto ---------- */
 async function copyText(text, buttonElement, successLabel) {
