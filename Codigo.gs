@@ -886,6 +886,8 @@ function evaluarFragmento_(consulta, nName, nArticle, nText) {
 function documentoCoincideConPistas_(meta, pistas) {
   const nombre = normalizar_(meta.nombre + ' ' + meta.carpeta);
   return pistas.every(function(p) {
+    // La sigla escrita tal cual en el nombre del archivo (p. ej. "RGLOSNCP") basta.
+    if (new RegExp(patronTermino_(p), 'u').test(nombre)) return true;
     const alias = ALIAS_NORMAS_[p];
     if (alias) return alias.every(function(a) { return new RegExp(a).test(nombre); });
     return new RegExp(patronTermino_(p), 'u').test(nombre);
