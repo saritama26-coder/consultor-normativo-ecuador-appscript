@@ -535,6 +535,8 @@ resultDescription.append(' ', todas);
 }
 }
 function actualizarOpciones() {
+const grupoRem = sourceFilter.querySelector('optgroup[data-remision]');
+if (grupoRem && !String(sourceFilter.value).startsWith('DOC:')) grupoRem.remove();
 const badge = document.getElementById('optsBadge');
 const det = document.getElementById('masOpciones');
 const activos = ((sourceFilter.value || 'TODAS') !== 'TODAS' ? 1 : 0) + (selectedMode() !== 'TODAS' ? 1 : 0);
@@ -1247,7 +1249,7 @@ if (last < textValue.length) container.appendChild(document.createTextNode(textV
 }
 /* ---------- Cita lista para informe ---------- */
 function citaFormal(item) {
-const doc = limpiarNombre(item.documento || 'Documento sin título');
+const doc = limpiarNombre(item.documento || 'Documento sin título').replace(/\s*\b(?:\d{4}\s\d{1,2}\s\d{1,2}|\d{1,2}\s\d{1,2}\s\d{4})\b\s*$/, '').trim();
 let art = item.articuloCoincidente || item.articulo || '';
 if (/^Fragmento\b/i.test(art)) art = '';
 art = art.replace(/^Art[íi]culo\s+/i, 'Art. ');
@@ -1284,7 +1286,7 @@ const btn = document.createElement('button');
 btn.type = 'button'; btn.className = 'remision';
 btn.textContent = m[0];
 const num = m[2];
-const ley = otra ? otra[1].trim() : '';
+const ley = otra ? otra[1].split(/\s+(?:y|e|o|u|en|así|sin|con|para|según|conforme)\s+/i)[0].trim() : '';
 btn.title = ley ? 'Buscar el art. ' + num + ' de ' + ley : 'Buscar el art. ' + num + ' en este documento';
 btn.addEventListener('click', function() { buscarRemision(num, ley, item); });
 frag.appendChild(btn);
