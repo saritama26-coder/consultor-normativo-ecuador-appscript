@@ -87,9 +87,26 @@ function doGet() {
  * ========================================================================= */
 
 /**
+ * La aplicación web es pública y se ejecuta con la cuenta del propietario.
+ * Cualquier función de nivel superior cuyo nombre no termine en "_" puede
+ * llamarse desde el navegador con google.script.run. Estas funciones de
+ * administración se bloquean salvo que las ejecute el propietario (editor).
+ */
+function soloAdministrador_() {
+  let activo = '';
+  let efectivo = '';
+  try { activo = Session.getActiveUser().getEmail(); } catch (e) {}
+  try { efectivo = Session.getEffectiveUser().getEmail(); } catch (e) {}
+  if (!activo || !efectivo || activo !== efectivo) {
+    throw new Error('Función reservada al administrador. Ejecútala desde el editor de Apps Script.');
+  }
+}
+
+/**
  * Inicializa encabezados. ADVERTENCIA: limpia las hojas y detiene activadores.
  */
 function configurarSistema() {
+  soloAdministrador_();
   eliminarActivadores_();
   const ss = getSpreadsheet_();
   reiniciarHoja_(getOrCreateSheet_(ss, CONFIG.SHEET_ARTICLES, HEADERS_ARTICLES), HEADERS_ARTICLES);
@@ -103,16 +120,22 @@ function configurarSistema() {
  * que continúa automáticamente hasta terminar. Puede ejecutarse varias veces.
  */
 async function indexarDocumentosDrive() {
+  soloAdministrador_();
   return await procesarIndexacion_();
 }
 
 /** Destino del activador automático. No ejecutar manualmente (aunque es seguro). */
 async function continuarIndexacion() {
+  const pendiente = ScriptApp.getProjectTriggers().some(function(t) {
+    return t.getHandlerFunction() === CONFIG.FUNCION_CONTINUAR;
+  });
+  if (!pendiente) return { ok: false, message: 'No hay una indexación pendiente de continuar.' };
   return await procesarIndexacion_();
 }
 
 /** Borra todo el índice y vuelve a indexar desde cero. */
 async function reindexarTodo() {
+  soloAdministrador_();
   configurarSistema();
   return await procesarIndexacion_();
 }
@@ -122,6 +145,7 @@ async function reindexarTodo() {
  * (y sus fragmentos) y los vuelve a procesar.
  */
 async function reintentarErrores() {
+  soloAdministrador_();
   const ss = getSpreadsheet_();
   const docSheet = getOrCreateSheet_(ss, CONFIG.SHEET_DOCUMENTS, HEADERS_DOCUMENTS);
   const artSheet = getOrCreateSheet_(ss, CONFIG.SHEET_ARTICLES, HEADERS_ARTICLES);
@@ -151,8 +175,65 @@ async function reintentarErrores() {
   return await procesarIndexacion_();
 }
 
+/**
+ * Actualiza el índice tras agregar, reemplazar o retirar leyes en Drive:
+ * 1. Quita del índice los documentos que ya no están en las carpetas (o están en la papelera).
+ * 2. Vuelve a indexar los documentos modificados en Drive después de su indexación
+ *    (por ejemplo, una ley reformada subida con "Administrar versiones").
+ * 3. Indexa los documentos nuevos.
+ * La verificación (columna H) de un documento reindexado se pierde a propósito:
+ * la nueva versión debe cotejarse otra vez con la publicación oficial.
+ */
+async function actualizarIndice() {
+  soloAdministrador_();
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
+    return { ok: false, message: 'Ya hay una indexación en curso. Espera a que termine.' };
+  }
+  let retirados = [];
+  let modificados = [];
+  try {
+    const ss = getSpreadsheet_();
+    const docSheet = getOrCreateSheet_(ss, CONFIG.SHEET_DOCUMENTS, HEADERS_DOCUMENTS);
+    const artSheet = getOrCreateSheet_(ss, CONFIG.SHEET_ARTICLES, HEADERS_ARTICLES);
+    if (docSheet.getLastRow() >= 2) {
+      const enDrive = {};
+      listarArchivosConfigurados_().forEach(function(f) { enDrive[f.id] = f; });
+      const docs = docSheet.getRange(2, 1, docSheet.getLastRow() - 1, 8).getValues();
+      const quitar = new Set();
+      docs.forEach(function(r) {
+        const id = String(r[0] || '');
+        if (!id) return;
+        const f = enDrive[id];
+        if (!f) { quitar.add(id); retirados.push(String(r[1] || id)); return; }
+        const indexado = r[5] instanceof Date ? r[5] : new Date(r[5]);
+        if (f.actualizado && !isNaN(indexado.getTime()) && f.actualizado.getTime() > indexado.getTime()) {
+          quitar.add(id); modificados.push(String(r[1] || id));
+        }
+      });
+      if (quitar.size) {
+        replaceSheetBody_(docSheet, docs.filter(function(r) { return !quitar.has(String(r[0])); }), 8);
+        if (artSheet.getLastRow() >= 2) {
+          const arts = artSheet.getRange(2, 1, artSheet.getLastRow() - 1, 8).getValues()
+            .filter(function(r) { return !quitar.has(String(r[0])); });
+          replaceSheetBody_(artSheet, arts, 8);
+        }
+      }
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  const r = await procesarIndexacion_();
+  r.retirados = retirados;
+  r.reindexados = modificados;
+  r.message = 'Retirados: ' + retirados.length + '. Reindexados por modificación: ' + modificados.length + '. ' + (r.message || '');
+  console.log(JSON.stringify({ retirados: retirados, reindexados: modificados, resultado: r.message }, null, 2));
+  return r;
+}
+
 /** Resumen del avance: total de archivos en Drive vs. indexados. */
 function estadoIndexacion() {
+  soloAdministrador_();
   const archivos = listarArchivosConfigurados_();
   const ss = getSpreadsheet_();
   const docSheet = ss.getSheetByName(CONFIG.SHEET_DOCUMENTS);
@@ -267,13 +348,15 @@ function recorrerCarpeta_(folder, ruta, salida, vistos, carpetasVistas) {
     const file = files.next();
     const id = file.getId();
     if (vistos.has(id)) continue;
+    if (file.isTrashed()) continue;
     vistos.add(id);
     salida.push({
       id: id,
       nombre: file.getName(),
       mime: file.getMimeType(),
       url: file.getUrl(),
-      carpeta: ruta
+      carpeta: ruta,
+      actualizado: file.getLastUpdated()
     });
   }
 
@@ -583,6 +666,7 @@ function consultarNormativa(pregunta, filtro, opciones) {
       verificado: !!meta.verificado,
       fechaArchivo: meta.fechaArchivo,
       ultimaModificacion: meta.ultimaModificacion || '',
+      registroOficial: meta.registroOficial || '',
       palabrasClave: matched
     });
   });
@@ -836,9 +920,46 @@ function estadoDisponible_(estado) {
  * administrador a mano: un valor que empiece por "Verificado" marca la fuente
  * como verificada (p. ej. "Verificado 2026-10-15 – texto cotejado con RO").
  */
+/**
+ * Hoja opcional "Registro Oficial": columna A = ID Drive, B = Documento,
+ * C = publicación (p. ej. "R.O. Suplemento 395, 4-VIII-2008"). Se usa en la cita.
+ * Ejecutar prepararHojaRegistroOficial() una vez y completar la columna C.
+ */
+const SHEET_RO = 'Registro Oficial';
+
+function prepararHojaRegistroOficial() {
+  soloAdministrador_();
+  const ss = getSpreadsheet_();
+  const sh = ss.getSheetByName(SHEET_RO) || ss.insertSheet(SHEET_RO);
+  if (sh.getLastRow() < 1) sh.getRange(1, 1, 1, 3).setValues([['ID Drive', 'Documento', 'Publicación (Registro Oficial)']]).setFontWeight('bold');
+  const existentes = new Set();
+  if (sh.getLastRow() >= 2) sh.getRange(2, 1, sh.getLastRow() - 1, 1).getValues().forEach(function(r) { existentes.add(String(r[0])); });
+  const docSheet = ss.getSheetByName(CONFIG.SHEET_DOCUMENTS);
+  const nuevos = [];
+  if (docSheet && docSheet.getLastRow() >= 2) {
+    docSheet.getRange(2, 1, docSheet.getLastRow() - 1, 2).getValues().forEach(function(r) {
+      if (r[0] && !existentes.has(String(r[0]))) nuevos.push([String(r[0]), String(r[1] || ''), '']);
+    });
+  }
+  if (nuevos.length) sh.getRange(sh.getLastRow() + 1, 1, nuevos.length, 3).setValues(nuevos);
+  console.log('Documentos agregados a la hoja "' + SHEET_RO + '": ' + nuevos.length);
+  return nuevos.length;
+}
+
+function leerRegistroOficial_() {
+  const out = {};
+  const sh = getSpreadsheet_().getSheetByName(SHEET_RO);
+  if (!sh || sh.getLastRow() < 2) return out;
+  sh.getRange(2, 1, sh.getLastRow() - 1, 3).getDisplayValues().forEach(function(r) {
+    if (r[0] && String(r[2]).trim()) out[String(r[0])] = String(r[2]).trim();
+  });
+  return out;
+}
+
 function leerMetadatosDocumentos_(docSheet) {
   const out = {};
   if (!docSheet || docSheet.getLastRow() < 2) return out;
+  const ro = leerRegistroOficial_();
   const ancho = Math.min(8, Math.max(7, docSheet.getLastColumn()));
   docSheet.getRange(2, 1, docSheet.getLastRow() - 1, ancho).getDisplayValues().forEach(function(row) {
     if (!row[0]) return;
@@ -856,7 +977,8 @@ function leerMetadatosDocumentos_(docSheet) {
       verificado: /^verificad[oa]/i.test(verif),
       verificacion: verif,
       fechaArchivo: fechaEnNombre_(row[1]),
-      ultimaModificacion: ''
+      ultimaModificacion: '',
+      registroOficial: ro[String(row[0])] || ''
     };
   });
   return out;
@@ -934,6 +1056,7 @@ function clasificarDocumento_(nombre, carpeta) {
 }
 
 function diagnosticoConfiguracion() {
+  soloAdministrador_();
   const ss = getSpreadsheet_();
   const carpetas = CONFIG.FOLDER_IDS.map(function(id) {
     try {
@@ -1536,6 +1659,7 @@ async function ocrConReintento_(blob, nombre, desde, hasta, fallidos) {
  * Para volver a procesarlos, ejecutar después reintentarErrores().
  */
 async function diagnosticarDocumentosSinTexto() {
+  soloAdministrador_();
   const sh = getSpreadsheet_().getSheetByName(CONFIG.SHEET_DOCUMENTS);
   if (!sh || sh.getLastRow() < 2) return [];
   const filas = sh.getRange(2, 1, sh.getLastRow() - 1, 7).getValues();
@@ -1559,6 +1683,7 @@ async function diagnosticarDocumentosSinTexto() {
 
 /** Agrega la columna "Verificación" a la hoja Documentos si falta. */
 function prepararColumnaVerificacion() {
+  soloAdministrador_();
   getOrCreateSheet_(getSpreadsheet_(), CONFIG.SHEET_DOCUMENTS, HEADERS_DOCUMENTS);
   return 'Columna H "Verificación" lista. Escribe "Verificado" (y opcionalmente fecha y nota) en las fuentes cotejadas.';
 }
@@ -1568,6 +1693,7 @@ function prepararColumnaVerificacion() {
  * truncados). Ejecutar una vez desde el editor.
  */
 async function reindexarPdfsGrandes() {
+  soloAdministrador_();
   const ss = getSpreadsheet_();
   const docSheet = getOrCreateSheet_(ss, CONFIG.SHEET_DOCUMENTS, HEADERS_DOCUMENTS);
   const artSheet = getOrCreateSheet_(ss, CONFIG.SHEET_ARTICLES, HEADERS_ARTICLES);
@@ -1599,6 +1725,7 @@ async function reindexarPdfsGrandes() {
 
 /** Ejecuta la indexación mostrando el resultado o el error en el registro. */
 async function indexarConRegistro() {
+  soloAdministrador_();
   try {
     const r = await procesarIndexacion_();
     console.log(JSON.stringify(r));
@@ -1615,6 +1742,7 @@ async function indexarConRegistro() {
  * al formato "Texto extraído; M fragmentos (N páginas…)" que espera el catálogo.
  */
 function normalizarEstadosDocumentos() {
+  soloAdministrador_();
   const sh = getSpreadsheet_().getSheetByName(CONFIG.SHEET_DOCUMENTS);
   if (!sh || sh.getLastRow() < 2) return 0;
   const rango = sh.getRange(2, 7, sh.getLastRow() - 1, 1);
