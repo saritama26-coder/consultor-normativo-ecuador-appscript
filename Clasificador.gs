@@ -33,8 +33,7 @@ const REGLAS_CLASIFICACION = [
   {
     carpeta: "04_Normativa_Tecnica_y_Construccion",
     palabras: [
-      "norma ecuatoriana de la construccion", "normas tecnicas nec",
-      "nec", "miduvi", "arquitectura", "construccion",
+      "miduvi", "arquitectura", "construccion",
       "norma tecnica", "normas tecnicas", "ordenanza",
       "accesibilidad universal", "sismorresistente",
       "especificaciones tecnicas"
