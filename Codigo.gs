@@ -35,6 +35,10 @@ const CONFIG = {
     '1tChmi3ToWPgpr4uf0nxCMmSYxeqr5EKR'  // Leyes Vigentes (contiene subcarpetas)
   ],
   INCLUIR_SUBCARPETAS: true,
+  // Carpetas que no se indexan (ni sus subcarpetas): no son fuentes normativas.
+  CARPETAS_EXCLUIDAS: [
+    '1p_HSTz-jZsXFAIIa4F46h6fGgjF0qWvv'  // 00 CONTROL DE ACTUALIZACIONES (informes de monitoreo)
+  ],
   SHEET_ARTICLES: 'Articulos',
   SHEET_DOCUMENTS: 'Documentos',
   MAX_RESULTS: 30,
@@ -340,6 +344,7 @@ function recorrerCarpeta_(folder, ruta, salida, vistos, carpetasVistas) {
   const fid = folder.getId();
   if (carpetasVistas.has(fid)) return;
   carpetasVistas.add(fid);
+  if (CONFIG.CARPETAS_EXCLUIDAS.indexOf(fid) !== -1) return;
 
   const files = folder.getFiles();
   while (files.hasNext()) {
